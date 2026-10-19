@@ -36,7 +36,6 @@ button{font-family:inherit}
 input,select,textarea{font-family:inherit;font-size:16px}
 .hidden{display:none !important}
 .wrap{max-width:1080px;margin:0 auto;padding:0 14px}
-
 /* ---------- 顶部 ---------- */
 .top{
   position:sticky;top:0;z-index:30;
@@ -249,7 +248,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
   border-top:1px solid #E2EFEB;box-shadow:0 -6px 24px rgba(46,59,71,.09);
 }
-.tb-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.tb-inner{max-width:none;margin:0 auto;padding:0 4px;display:flex;align-items:center;gap:12px}
 .tb-dot{width:9px;height:9px;border-radius:50%;background:#63B8A6;flex:0 0 9px;animation:blink 1.6s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .tb-main{flex:1;min-width:0}
@@ -443,8 +442,12 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 }
 @media print{body{background:#fff}}
 /* ================= 左中右三栏 ================= */
-.wrap{max-width:1400px}
-.layout{display:grid;grid-template-columns:200px minmax(0,1fr) 340px;gap:14px;align-items:start}
+/* 铺满整个屏幕：左右两栏按视口给宽度，剩下的全给中间 */
+.wrap{max-width:none;width:100%;padding:0 18px}
+.layout{
+  display:grid;gap:16px;align-items:start;
+  grid-template-columns:clamp(176px,11.5vw,208px) minmax(0,1fr) clamp(300px,20.5vw,348px);
+}
 
 .rail{position:sticky;top:70px;display:flex;flex-direction:column;gap:3px;
   background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:7px;box-shadow:var(--shadow)}
@@ -536,11 +539,13 @@ body.dt-dragging .dtodo{cursor:grabbing}
 
 /* ================= 周历（7 天并排） ================= */
 .wk-wrap{
-  --wh:22px;
+  --wh:22px;   /* 宽屏另有断点放大，JS 会读这个具体值算色块位置 */
   border:1px solid var(--line);border-radius:14px;background:#fff;
-  overflow-y:auto;overflow-x:hidden;max-height:min(70vh,660px);
+  overflow-y:auto;overflow-x:hidden;max-height:min(74vh,760px);
   -webkit-overflow-scrolling:touch;
 }
+@media (min-width:1560px){ .wk-wrap{--wh:24px} }
+@media (min-width:1960px){ .wk-wrap{--wh:27px} }
 .wk-heads{
   position:sticky;top:0;z-index:4;display:grid;grid-template-columns:32px repeat(7,minmax(0,1fr));
   background:#fff;border-bottom:1px solid var(--line2);
@@ -580,7 +585,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
 .mn-wrap{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
 .mn-dow{display:grid;grid-template-columns:repeat(7,1fr);background:#FBFDFE;border-bottom:1px solid var(--line2)}
 .mn-dow span{text-align:center;font-size:11px;color:var(--ink3);padding:6px 0}
-.mn-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:106px}
+.mn-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:clamp(106px,6.8vw,150px)}
 .mc{
   position:relative;display:flex;flex-direction:column;gap:3px;min-width:0;cursor:pointer;
   padding:5px 5px 4px;border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);
@@ -2469,9 +2474,11 @@ function bindTimeline(){
   });
 }
 
-function ganttSVG(tasks){
+function ganttSVG(tasks, wpx){
   var days = 10, endK = todayKey(), startK = shiftDay(endK, -(days-1));
-  var W = 680, labelW = 166, padR = 8, top = 32, rowH = 30;
+  /* viewBox 宽度跟着容器走：否则宽屏下 svg 被整体放大，11px 的字被拉到十七八像素 */
+  var W = Math.max(620, Math.min(1500, Math.round(wpx || 680)));
+  var labelW = 166, padR = 8, top = 32, rowH = 30;
   var colW = (W - labelW - padR) / days;
   var rows = tasks.slice(0, 12);
   var H = top + Math.max(1, rows.length) * rowH + 14;
@@ -2637,9 +2644,10 @@ function renderWeek(){
         var top = it.s / 60 * WH;
         var hg = Math.max(8, (it.e - it.s) / 60 * WH);
         var lanes = it.lanes || 1, lane = it.lane || 0, wp = 100 / lanes;
+        var lPct = wp * lane, rPct = 100 - wp * (lane + 1);
         inner += '<div class="wk-blk' + (hg < 15 ? ' tiny' : '') + '"'
           + ' style="top:' + top.toFixed(1) + 'px;height:' + hg.toFixed(1) + 'px;'
-          + 'left:calc(' + (wp*lane).toFixed(2) + '% + 1px);width:calc(' + wp.toFixed(2) + '% - 2px);'
+          + 'left:calc(' + lPct.toFixed(2) + '% + 1px);right:calc(' + rPct.toFixed(2) + '% + 1px);'
           + '--tint:' + (CAT_BG_WK[it.cat] || '#EDF2F6') + ';--bar:' + (CAT_COLOR[it.cat] || '#B7C6D2') + '"'
           + ' title="' + esc(it.name + ' · ' + minToHM(it.s) + '–' + minToHM(it.e)) + '">'
           + esc(it.name) + '</div>';
@@ -2739,7 +2747,10 @@ function renderGantt(){
     return ap < bp ? 1 : (ap > bp ? -1 : 0);
   });
   var rows = open.concat(done);
-  el('ganttBox').innerHTML = ganttSVG(rows);
+  /* 容器此时可能还没显示（页签隐藏时 clientWidth 为 0），那就退回 680 的默认宽度 */
+  var box = el('ganttBox');
+  var wpx = box && box.clientWidth ? box.clientWidth - 18 : 0;
+  box.innerHTML = ganttSVG(rows, wpx);
   el('ganttNote').textContent = rows.length
     ? '每根条 = 一个任务：从计划那天起，到完成那天（未完成则画到今天）。红描边表示已经拖过计划日期还没完成。'
     : '录入任务后这里会显示时间跨度。';
@@ -3259,6 +3270,8 @@ function switchPane(id, noScroll){
   }
   if(id === 'secWeek'){ renderWeek(); weekScrollTop(); }
   if(id === 'secMonth'){ renderMonth(); }
+  /* 甘特图的 viewBox 宽度按容器现量，隐藏时量不到，切过来时补画一次 */
+  if(id === 'secStats'){ renderGantt(); }
   if(!noScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -3307,7 +3320,7 @@ function bindEvents(){
   var rzT = null;
   window.addEventListener('resize', function(){
     if(rzT) clearTimeout(rzT);
-    rzT = setTimeout(function(){ renderWeek(); renderMonth(); }, 200);
+    rzT = setTimeout(function(){ renderWeek(); renderMonth(); renderGantt(); }, 200);
   });
 
   /* 按住 Option 时把光标换成「复制」，一眼知道现在是复制不是移动 */
