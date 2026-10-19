@@ -374,8 +374,9 @@ input,select,textarea{font-family:inherit;font-size:16px}
   pointer-events:auto;display:inline-flex;align-items:center;gap:5px;max-width:100%;
   height:20px;padding:0 8px 0 7px;border-radius:8px;background:#fff;
   border:1px solid #EDF3F7;font-size:11.5px;color:var(--ink2);
-  cursor:pointer;transition:.14s;
+  cursor:grab;touch-action:none;transition:border-color .14s,box-shadow .14s;
 }
+.doti.dragging{cursor:grabbing;box-shadow:0 4px 14px rgba(46,59,71,.18);border-color:#CFE2F4;background:#fff}
 .doti i{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
 .doti b{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .doti:hover{border-color:#D8E6F0;color:var(--ink);box-shadow:0 1px 4px rgba(46,59,71,.09)}
@@ -635,7 +636,8 @@ input,select,textarea{font-family:inherit;font-size:16px}
     </div>
     <p class="tl-tip">
       <b>点一下空白处</b>＝往这个半小时格里记一件小事（彩色圆点，不占时长，可以连着记好几件）；
-      <b>按住往下拖</b>＝记一段时间。拖动色块可以整体挪动，拖色块底部可以改结束时间，点一下可以改内容或删除。
+      <b>按住往下拖</b>＝记一段时间。拖动色块可以整体挪动，拖色块底部可以改结束时间；
+      <b>圆点也能直接拖</b>，拖到哪一格就落到哪一格。点一下可以改内容或删除。
     </p>
 
     <div class="sesslist" id="timelineList"></div>
@@ -1886,11 +1888,17 @@ function tlDown(e){
   if(dotEl){
     var did = dotEl.getAttribute('data-id');
     var dss = findSession(did);
-    if(dss){
-      var slot = dotSlot(dss);
-      openSheet({ id: did, name: dss['任务内容'] || '', cat: dss['分类'] || '',
-        s: slot == null ? 0 : slot, e: slot == null ? 0 : slot, kind: 'dot' });
-    }
+    var rectD = cv.getBoundingClientRect();
+    var hrD = hourH();
+    var mD = tlSnap((e.clientY - rectD.top) / hrD * 60);
+    var slot0 = dss ? dotSlot(dss) : Math.floor(mD / 30) * 30;
+    if(slot0 == null) slot0 = Math.floor(mD / 30) * 30;
+    TL.drag = {
+      mode: 'dot', dot: dotEl, id: did, ss: dss, pid: e.pointerId, hr: hrD,
+      y0: e.clientY, slot0: slot0, slot: slot0, moved: false, ghost: null
+    };
+    try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+    if(e.pointerType !== 'touch'){ e.preventDefault(); }
     return;
   }
   var blk = e.target.closest ? e.target.closest('.blk') : null;
@@ -1926,6 +1934,27 @@ function tlMove(e){
   d.cur = tlSnap((e.clientY - rect.top) / d.hr * 60);
   if(!d.moved && Math.abs(e.clientY - d.y0) > 4) d.moved = true;
 
+  if(d.mode === 'dot'){
+    if(!d.moved) return;
+    /* 半小时一档，拖一格就是一格，落点吸附 */
+    var stepD = d.hr / 2;
+    var rowsD = Math.round((e.clientY - d.y0) / stepD);
+    var nsD = Math.max(0, Math.min(1410, d.slot0 + rowsD * 30));
+    d.slot = nsD;
+    d.dot.classList.add('dragging');
+    d.dot.style.transform = 'translateY(' + (rowsD * stepD).toFixed(1) + 'px)';
+    if(!d.ghost){
+      var gD = document.createElement('div');
+      gD.className = 'tl-ghost';
+      cv.appendChild(gD);
+      d.ghost = gD;
+    }
+    d.ghost.style.top = (nsD / 60 * d.hr) + 'px';
+    d.ghost.style.height = stepD + 'px';
+    d.ghost.textContent = minToHM(nsD) + '–' + minToHM(Math.min(1440, nsD + 30));
+    return;
+  }
+
   if(d.mode === 'create' && d.ghost){
     var a = Math.min(d.anchor, d.cur), b = Math.max(d.anchor, d.cur);
     if(b - a < 15) b = Math.min(1440, a + 15);
@@ -1950,7 +1979,28 @@ function tlUp(e){
   var cur = d.cur, anchor = d.anchor;
   var mode = d.mode, blk = d.blk, s0 = d.s0, e0 = d.e0, ns = d.ns, ne = d.ne;
   var blkId = blk ? blk.getAttribute('data-id') : null;
+  var dotNode = d.dot, dotId = d.id, ssDot = d.ss, dotFrom = d.slot0, dotTo = d.slot;
   tlCleanup();
+  if(mode === 'dot' && dotNode){
+    dotNode.classList.remove('dragging');
+    dotNode.style.transform = '';
+  }
+  if(mode === 'dot'){
+    if(!wasMoved){
+      if(ssDot){
+        var sl0 = dotFrom == null ? 0 : dotFrom;
+        openSheet({ id: dotId, name: ssDot['任务内容'] || '', cat: ssDot['分类'] || '',
+          s: sl0, e: sl0, kind: 'dot' });
+      }
+      return;
+    }
+    if(dotTo !== dotFrom && ssDot){
+      persistBlock({ id: dotId, name: ssDot['任务内容'] || '未命名', cat: ssDot['分类'] || '家庭生活',
+        s: dotTo, e: dotTo });
+      toast('已挪到 ' + minToHM(dotTo) + ' 这一格');
+    }
+    return;
+  }
 
   if(mode === 'create'){
     var a = Math.min(anchor, cur), b = Math.max(anchor, cur);
@@ -1990,6 +2040,10 @@ function tlUp(e){
 function tlCancel(e){
   var d = TL.drag;
   if(!d || e.pointerId !== d.pid) return;
+  if(d.mode === 'dot' && d.dot){
+    d.dot.classList.remove('dragging');
+    d.dot.style.transform = '';
+  }
   tlCleanup();
   renderDayGrid();
 }
