@@ -218,6 +218,42 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .daynav button:hover{background:#F4F9FC;color:var(--primary)}
 .daynav span{font-size:12px;color:var(--ink2);padding:0 6px;white-space:nowrap}
 .gantt-note{font-size:12px;color:var(--ink3);margin-top:8px}
+/* ---- 统计：时间构成饼图 ---- */
+.stat-note{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.6}
+.stat-note b{color:var(--ink2);font-weight:600}
+.pie-wrap{
+  display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);
+  gap:6px 20px;align-items:center;
+  border:1px solid var(--line2);border-radius:14px;background:#FDFEFE;padding:12px 16px 14px;
+}
+.pie-head{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.scopes{display:inline-flex;background:#F4F8FA;border:1px solid #EAF1F6;border-radius:20px;padding:2px;gap:2px}
+.scopes .fb{height:26px;padding:0 11px;border:0;background:transparent;border-radius:18px;font-size:12px}
+.scopes .fb.on{background:#fff;color:#4E7CA8;box-shadow:0 1px 3px rgba(46,59,71,.1);border:0}
+.pie-nav{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:#fff;margin-left:auto}
+.pie-nav button{width:26px;height:26px;border:0;background:transparent;color:var(--ink2);cursor:pointer;font-size:14px;line-height:1}
+.pie-nav button:hover{background:#F4F9FC;color:var(--primary)}
+.pie-nav span{font-size:12px;color:var(--ink2);padding:0 6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pie-canvas{min-width:0}
+.pie-canvas svg{display:block;width:100%;max-width:230px;height:auto;margin:0 auto}
+.pie-side{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:9px 22px;align-content:center;min-width:0}
+.pie-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);min-width:0}
+.pie-row i{width:9px;height:9px;border-radius:3px;flex:0 0 9px}
+.pie-row span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pie-row b{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.pie-row em{font-style:normal;color:var(--ink3);width:40px;text-align:right;flex:0 0 40px;font-variant-numeric:tabular-nums}
+.pie-sub{
+  grid-column:1/-1;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line2);
+  font-size:11.5px;color:var(--ink3);line-height:1.9;
+}
+.pie-sub b{color:var(--ink2);font-weight:600}
+.pie-sub .sb{display:inline-block;margin-right:12px;white-space:nowrap}
+@media (max-width:767px){
+  .pie-wrap{grid-template-columns:1fr;padding:11px 12px 13px}
+  .pie-canvas svg{max-width:180px}
+  .pie-side{grid-template-columns:1fr;gap:7px}
+  .pie-row em{width:36px;flex:0 0 36px}
+}
 .sesslist{display:flex;flex-direction:column;gap:6px;margin-top:9px}
 .sessrow{
   display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink2);
@@ -872,7 +908,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
 
   <!-- ============ 模块 3：统计 ============ -->
   <section class="sec pane" id="secStats">
-    <div class="sec-head"><h2>统计</h2><span class="sec-hint">数据来自在线表，多设备实时同步</span></div>
+    <div class="sec-head"><h2>统计</h2><span class="sec-hint">柱状图只看科研 + 教学，饼图看全部</span></div>
 
     <div class="kpis">
       <div class="kpi k-teach">
@@ -884,12 +920,12 @@ body.dt-dragging .dtodo{cursor:grabbing}
         <div class="k-lab">今日已完成</div>
       </div>
       <div class="kpi k-res">
-        <div class="k-num" id="kpiTodayMin" data-sp-bindable="database" data-sp-database-id="qgG4Bg18jaBhmBHdvjwNHw">0<small>分</small></div>
-        <div class="k-lab">今日专注</div>
+        <div class="k-num" id="kpiTodayMin" data-sp-bindable="database" data-sp-database-id="qgG4Bg18jaBhmBHdvjwNHw">0<small>小时</small></div>
+        <div class="k-lab" title="只算科研 + 教学">今日专注</div>
       </div>
       <div class="kpi k-fam">
-        <div class="k-num" id="kpiWeekMin" data-sp-bindable="database" data-sp-database-id="qgG4Bg18jaBhmBHdvjwNHw">0<small>分</small></div>
-        <div class="k-lab">本周专注</div>
+        <div class="k-num" id="kpiWeekMin" data-sp-bindable="database" data-sp-database-id="qgG4Bg18jaBhmBHdvjwNHw">0<small>小时</small></div>
+        <div class="k-lab" title="只算科研 + 教学">本周专注</div>
       </div>
     </div>
 
@@ -899,6 +935,27 @@ body.dt-dragging .dtodo{cursor:grabbing}
 
     <div class="chart-title">近 7 天专注时长<span class="sub" id="weekSub"></span></div>
     <div class="svgbox" id="weekBox"></div>
+    <div class="stat-note">这里只算 <b>科研 + 教学</b>，单位是<b>小时</b>。行政、家务、通勤、摸鱼发呆都不算进"专注"，但它们没丢——都在下面的饼图里。</div>
+
+    <div class="chart-title">时间构成<span class="sub" id="pieSum"></span></div>
+    <div class="pie-wrap">
+      <div class="pie-head">
+        <span class="scopes" id="pieScopes">
+          <button class="fb on" data-scope="day">每天</button>
+          <button class="fb" data-scope="week">每周</button>
+          <button class="fb" data-scope="month">每月</button>
+          <button class="fb" data-scope="year">每年</button>
+        </span>
+        <span class="pie-nav">
+          <button id="piePrev" title="往前一段" aria-label="往前一段">‹</button>
+          <span id="pieLabel">—</span>
+          <button id="pieNext" title="往后一段" aria-label="往后一段">›</button>
+        </span>
+      </div>
+      <div class="pie-canvas" id="pieBox"></div>
+      <div class="pie-side" id="pieLegend"></div>
+      <div class="pie-sub" id="pieSubs"></div>
+    </div>
 
     <div class="chart-title">任务甘特图<span class="sub">近 10 天</span></div>
     <div class="svgbox" id="ganttBox"></div>
@@ -1158,7 +1215,7 @@ var RULES = [
 RULES[0].kw.push('改作业','讲题','出卷','学业指导','毕设指导');
 RULES[1].kw.push('读文献','改论文','写论文','跑数据','数据分析');
 RULES[2].kw.push('对接','材料整理','通知下发','填报','邮件','回邮件','发邮件','寄件');
-RULES[3].kw.push('晨间','整理','收纳','采买','遛狗','宠物','追剧','午睡','看剧','喝咖啡','喝茶','午休','通勤','上班路上','下班路上','地铁','公交','堵车','取快递','快递','缴费','充话费');
+RULES[3].kw.push('晨间','整理','收纳','采买','遛狗','宠物','追剧','午睡','看剧','喝咖啡','喝茶','午休','通勤','上班路上','下班路上','地铁','公交','堵车','取快递','快递','缴费','充话费','摸鱼','发呆','放空','走神','刷手机','刷视频','打游戏','休息');
 
 /* 生活类二级细项：不新增色相，只用来在块内做小字标签 */
 var LIFE_SUBS = [
@@ -1167,8 +1224,8 @@ var LIFE_SUBS = [
   { sub:'陪伴', kw:['陪孩子','陪娃','亲子','读绘本','绘本','孩子','儿子','女儿','宝宝','接娃','送娃','父母','爸妈','家人','家庭','老公','爱人','陪'] },
   { sub:'自我', kw:['自我提升','读书','看书','听书','学英语','背单词','练字','练琴','画画','冥想','网课','学习','阅读','笔记','听课'] },
   { sub:'健康', kw:['医院','体检','复诊','看病','挂号','牙医','吃药','理疗','针灸'] },
-  { sub:'闲适', kw:['休息','睡觉','午睡','午休','看剧','追剧','刷手机','发呆','喝咖啡','喝茶','聊天','刷视频'] },
-  { sub:'通勤', kw:['通勤','上班路上','下班路上','路上','地铁','公交','开车','骑车','打车','堵车','单程'] }
+  { sub:'闲适', kw:['休息','睡觉','午睡','午休','看剧','追剧','刷手机','发呆','喝咖啡','喝茶','聊天','刷视频','摸鱼','放空','走神','玩手机','刷短视频','闲逛','躺','歇','打游戏','游戏'] },
+  { sub:'通勤', kw:['通勤','上班路上','下班路上','路上','地铁','公交','开车','骑车','打车','堵车','单程','班车','校车','步行去'] }
 ];
 function subOf(text, cat){
   if(!text) return '';
@@ -1377,6 +1434,26 @@ function minutesOfSessions(list){
   list.forEach(function(ss){ t += Number(ss['时长分钟']) || 0; });
   return t;
 }
+/* 「专注」只算科研 + 教学：行政是事务、生活是过日子，都不该混进专注时长里 */
+var FOCUS_CATS = ['科研', '教学'];
+function isFocus(cat){ return FOCUS_CATS.indexOf(cat) !== -1; }
+function focusMinutesOf(list){
+  var t = 0;
+  list.forEach(function(ss){
+    if(!isFocus(ss['分类'])) return;
+    t += Number(ss['时长分钟']) || 0;
+  });
+  return t;
+}
+/* 分钟 → 小时，保留一位小数（420 分 → 7h） */
+function hNum(mins){
+  var v = Math.round((Number(mins) || 0) / 6) / 10;
+  return v % 1 ? v.toFixed(1) : String(v);
+}
+function hText(mins){
+  var v = hNum(mins);
+  return v === '0' ? '0' : v + 'h';
+}
 function computeStats(){
   var today = todayKey();
   var ws = weekStartKey();
@@ -1390,14 +1467,16 @@ function computeStats(){
     if(byCat[c] == null) byCat[c] = 0;
     byCat[c]++;
   });
-  var todayMin = 0, weekMin = 0, days = [];
+  var todayMin = 0, weekMin = 0, todayFocus = 0, weekFocus = 0, days = [];
   var i;
   for(i = 6; i >= 0; i--){
     var k = shiftDay(today, -i);
-    var m = minutesOfSessions(sessionsOfDay(k));
-    days.push({ key: k, min: m });
-    if(k === today) todayMin = m;
-    if(k >= ws) weekMin += m;
+    var list = sessionsOfDay(k);
+    var m = minutesOfSessions(list);
+    var f = focusMinutesOf(list);
+    days.push({ key: k, min: m, focus: f });
+    if(k === today){ todayMin = m; todayFocus = f; }
+    if(k >= ws){ weekMin += m; weekFocus += f; }
   }
   return {
     overdue: b.overdue.length,
@@ -1407,6 +1486,8 @@ function computeStats(){
     byCat: byCat,
     todayMin: todayMin,
     weekMin: weekMin,
+    todayFocus: todayFocus,
+    weekFocus: weekFocus,
     days: days
   };
 }
@@ -1582,33 +1663,36 @@ function distSVG(byCat, total){
   return out;
 }
 function weekSVG(days){
-  var W = 680, H = 168, padL = 34, padR = 10, top = 20, bottom = 34;
+  var W = 680, H = 168, padL = 38, padR = 10, top = 20, bottom = 34;
   var n = days.length, maxV = 0;
-  days.forEach(function(d){ if(d.min > maxV) maxV = d.min; });
-  var scaleMax = Math.max(30, Math.ceil(maxV / 30) * 30);
+  days.forEach(function(d){ if((d.focus || 0) > maxV) maxV = d.focus || 0; });
+  /* 刻度按「小时」走，别让柱顶蹦出一个 420 让人猜单位 */
+  var maxH = maxV / 60;
+  var stepH = maxH <= 1 ? 0.5 : (maxH <= 3 ? 1 : (maxH <= 8 ? 2 : 4));
+  var scaleH = Math.max(stepH * 2, Math.ceil(maxH / stepH) * stepH);
   var plotW = W - padL - padR, plotH = H - top - bottom;
   var step = plotW / n, bw = Math.min(34, step * 0.5);
-  var out = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="近 7 天专注时长">';
+  var out = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="近 7 天专注时长（科研 + 教学）">';
   out += '<line x1="'+padL+'" y1="'+(top+plotH)+'" x2="'+(W-padR)+'" y2="'+(top+plotH)+'" stroke="#E9EFF3" stroke-width="1"/>';
   [0, 0.5, 1].forEach(function(f){
     var y = top + plotH * (1 - f);
     out += '<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="#F1F6F8" stroke-width="1"/>';
-    out += '<text x="'+(padL-7)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end" font-size="10" fill="#AEBCC6">'+Math.round(scaleMax*f)+'</text>';
+    out += '<text x="'+(padL-7)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end" font-size="10" fill="#AEBCC6">'
+      + hText(scaleH * f * 60) + '</text>';
   });
   days.forEach(function(d, i){
     var cx = padL + step * i + step / 2;
-    var h = plotH * (d.min / scaleMax);
-    if(h < 2 && d.min > 0) h = 2;
+    var v = d.focus || 0;
+    var h = plotH * (v / 60 / scaleH);
+    if(h < 2 && v > 0) h = 2;
     var dd = new Date(d.key + 'T00:00:00');
     var isToday = d.key === todayKey();
     var col = isToday ? '#7FA8DC' : '#BBD3E8';
     if(h > 0){
       out += '<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+(top+plotH-h).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="5" fill="'+col+'"/>';
+      out += '<text x="'+cx.toFixed(1)+'" y="'+(top+plotH-h-6).toFixed(1)+'" text-anchor="middle" font-size="10" fill="#7E909C">'+hText(v)+'</text>';
     }else{
       out += '<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+(top+plotH-3)+'" width="'+bw.toFixed(1)+'" height="3" rx="1.5" fill="#EDF3F7"/>';
-    }
-    if(d.min > 0){
-      out += '<text x="'+cx.toFixed(1)+'" y="'+(top+plotH-h-6).toFixed(1)+'" text-anchor="middle" font-size="10" fill="#7E909C">'+Math.round(d.min)+'</text>';
     }
     out += '<text x="'+cx.toFixed(1)+'" y="'+(top+plotH+16)+'" text-anchor="middle" font-size="10.5" fill="'+(isToday ? '#4E7CA8' : '#AEBCC6')+'" font-weight="'+(isToday ? '600' : '400')+'">周'+WD[dd.getDay()]+'</text>';
     out += '<text x="'+cx.toFixed(1)+'" y="'+(top+plotH+28)+'" text-anchor="middle" font-size="9.5" fill="#C3CFD8">'+d.key.slice(5)+'</text>';
@@ -2536,8 +2620,8 @@ function renderStats(){
   var st = computeStats();
   el('kpiTodo').innerHTML = st.todo + '<small>项</small>';
   el('kpiDone').innerHTML = st.doneToday + '<small>项</small>';
-  el('kpiTodayMin').innerHTML = Math.round(st.todayMin) + '<small>分</small>';
-  el('kpiWeekMin').innerHTML = Math.round(st.weekMin) + '<small>分</small>';
+  el('kpiTodayMin').innerHTML = hNum(st.todayFocus) + '<small>小时</small>';
+  el('kpiWeekMin').innerHTML = hNum(st.weekFocus) + '<small>小时</small>';
 
   var totalPending = 0;
   CATS.forEach(function(c){ totalPending += (st.byCat[c] || 0); });
@@ -2548,8 +2632,117 @@ function renderStats(){
   }).join('');
 
   el('weekBox').innerHTML = weekSVG(st.days);
-  var wsum = 0; st.days.forEach(function(d){ wsum += d.min; });
-  el('weekSub').textContent = '合计 ' + fmtMin(wsum);
+  var wsum = 0; st.days.forEach(function(d){ wsum += d.focus || 0; });
+  el('weekSub').textContent = '科研 + 教学 合计 ' + hText(wsum);
+}
+/* ---------- 时间构成饼图：每天 / 每周 / 每月 / 每年 ---------- */
+var PIE = { scope: 'day', anchor: todayKey() };
+
+function pieRange(){
+  var a = PIE.anchor;
+  var p = String(a).split('-'), y = Number(p[0]), mo = Number(p[1]);
+  if(PIE.scope === 'week'){
+    var s = weekStartOf(a), e = shiftDay(s, 6);
+    return { from: s, to: e, text: s.slice(5).replace('-','/') + ' – ' + e.slice(5).replace('-','/') };
+  }
+  if(PIE.scope === 'month'){
+    var last = new Date(y, mo, 0).getDate();
+    return { from: y + '-' + pad(mo) + '-01', to: y + '-' + pad(mo) + '-' + pad(last), text: y + ' 年 ' + mo + ' 月' };
+  }
+  if(PIE.scope === 'year'){
+    return { from: y + '-01-01', to: y + '-12-31', text: y + ' 年' };
+  }
+  var dd = new Date(a + 'T00:00:00');
+  return { from: a, to: a, text: a.slice(5).replace('-','/') + ' 周' + WD[dd.getDay()] };
+}
+function pieAgg(){
+  var r = pieRange();
+  var byCat = {}, subs = {}, total = 0, dots = 0;
+  state.sessions.forEach(function(ss){
+    var k = dateKey(ss['日期']) || dateKey(ss['开始时间']);
+    if(!k || k < r.from || k > r.to) return;
+    var m = Number(ss['时长分钟']) || 0;
+    if(m <= 0){ dots++; return; }              /* 圆点是「只记先后」，不占时长 */
+    var c = CATS.indexOf(ss['分类']) !== -1 ? ss['分类'] : '家庭生活';
+    byCat[c] = (byCat[c] || 0) + m;
+    total += m;
+    if(c === '家庭生活'){
+      var sb = subOf(ss['任务内容'] || '', c) || '其他';
+      subs[sb] = (subs[sb] || 0) + m;
+    }
+  });
+  return { range: r, byCat: byCat, subs: subs, total: total, dots: dots };
+}
+function polarPt(cx, cy, r, deg){
+  var a = (deg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+function donutSVG(byCat, total){
+  var S = 200, cx = 100, cy = 100, R = 82, ri = 54;
+  var out = '<svg viewBox="0 0 '+S+' '+S+'" role="img" aria-label="时间构成饼图">';
+  if(total <= 0){
+    out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+((R+ri)/2)+'" fill="none" stroke="#EDF3F7" stroke-width="'+(R-ri)+'"/>';
+    out += '<text x="'+cx+'" y="'+(cy+3)+'" text-anchor="middle" font-size="12" fill="#9FAEB9">还没有记录</text>';
+    return out + '</svg>';
+  }
+  var acc = 0;
+  CATS.forEach(function(c){
+    var m = byCat[c] || 0;
+    if(!m) return;
+    var a0 = acc / total * 360, a1 = (acc + m) / total * 360;
+    acc += m;
+    /* 只有一个分类占满时画整圈，弧段首尾重合会画不出来 */
+    if(a1 - a0 >= 359.5){
+      out += '<circle cx="'+cx+'" cy="'+cy+'" r="'+((R+ri)/2)+'" fill="none" stroke="'+CAT_COLOR[c]+'" stroke-width="'+(R-ri)+'"/>';
+      return;
+    }
+    var gap = (a1 - a0) > 4 ? 1.4 : 0;
+    var s0 = a0 + gap/2, s1 = a1 - gap/2;
+    var p1 = polarPt(cx, cy, R, s0), p2 = polarPt(cx, cy, R, s1);
+    var p3 = polarPt(cx, cy, ri, s1), p4 = polarPt(cx, cy, ri, s0);
+    var large = (s1 - s0) > 180 ? 1 : 0;
+    out += '<path d="M'+p1.x.toFixed(2)+' '+p1.y.toFixed(2)
+      + ' A'+R+' '+R+' 0 '+large+' 1 '+p2.x.toFixed(2)+' '+p2.y.toFixed(2)
+      + ' L'+p3.x.toFixed(2)+' '+p3.y.toFixed(2)
+      + ' A'+ri+' '+ri+' 0 '+large+' 0 '+p4.x.toFixed(2)+' '+p4.y.toFixed(2)+' Z" fill="'+CAT_COLOR[c]+'"/>';
+  });
+  out += '<text x="'+cx+'" y="'+(cy-1)+'" text-anchor="middle" font-size="22" font-weight="700" fill="#2E3B47" letter-spacing="-.5">'+hText(total)+'</text>';
+  out += '<text x="'+cx+'" y="'+(cy+17)+'" text-anchor="middle" font-size="10.5" fill="#9FAEB9">合计</text>';
+  return out + '</svg>';
+}
+function renderPie(){
+  var agg = pieAgg();
+  el('pieLabel').textContent = agg.range.text;
+  el('pieBox').innerHTML = donutSVG(agg.byCat, agg.total);
+
+  var rows = '';
+  CATS.forEach(function(c){
+    var m = agg.byCat[c] || 0;
+    if(!m) return;
+    rows += '<div class="pie-row"><i style="background:'+CAT_COLOR[c]+'"></i>'
+      + '<span>'+c+'</span><b>'+shortMin(m)+'</b>'
+      + '<em>'+Math.round(m / agg.total * 100)+'%</em></div>';
+  });
+  el('pieLegend').innerHTML = rows || '<div class="pie-row" style="color:#9FAEB9">这一段还没有记录</div>';
+  el('pieSum').textContent = agg.total ? ('合计 ' + fmtMin(agg.total)) : '';
+
+  var sb = [];
+  ['通勤','家务','运动','陪伴','自我','健康','闲适','其他'].forEach(function(k){
+    var m = agg.subs[k] || 0;
+    if(!m) return;
+    sb.push('<span class="sb">'+k+' <b>'+shortMin(m)+'</b></span>');
+  });
+  var tip = '生活细分（都归在「家庭生活」色块里）：' + (sb.length ? sb.join('') : '这段时间没有生活类记录');
+  tip += '<br>通勤、摸鱼发呆都不算专注 —— 它们只出现在这张饼图的「家庭生活」里，上面那张柱状图不会算它们。';
+  if(agg.dots) tip += '<br>另有 <b>'+agg.dots+'</b> 件用彩色圆点记的小事：圆点不计时长，所以不进饼图。';
+  el('pieSubs').innerHTML = tip;
+}
+function pieShift(n){
+  if(PIE.scope === 'day') PIE.anchor = shiftDay(PIE.anchor, n);
+  else if(PIE.scope === 'week') PIE.anchor = shiftDay(PIE.anchor, 7 * n);
+  else if(PIE.scope === 'month') PIE.anchor = shiftMonth(PIE.anchor.slice(0,7), n) + '-01';
+  else PIE.anchor = (Number(PIE.anchor.slice(0,4)) + n) + '-01-01';
+  renderPie();
 }
 function renderTimeline(){
   var k = state.timelineDay, t = todayKey();
@@ -2773,6 +2966,7 @@ function renderAll(){
   renderDockTodo();
   renderAllList();
   renderStats();
+  renderPie();
   renderTimeline();
   renderWeek();
   renderMonth();
@@ -3271,7 +3465,7 @@ function switchPane(id, noScroll){
   if(id === 'secWeek'){ renderWeek(); weekScrollTop(); }
   if(id === 'secMonth'){ renderMonth(); }
   /* 甘特图的 viewBox 宽度按容器现量，隐藏时量不到，切过来时补画一次 */
-  if(id === 'secStats'){ renderGantt(); }
+  if(id === 'secStats'){ renderPie(); renderGantt(); }
   if(!noScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -3296,9 +3490,21 @@ function bindEvents(){
   });
 
   /* 周历 / 月历：翻页 + 点某天跳过去 */
+  /* 时间构成：日 / 周 / 月 / 年 + 前后翻 */
+  el('pieScopes').addEventListener('click', function(ev){
+    var b = ev.target.closest ? ev.target.closest('button[data-scope]') : null;
+    if(!b) return;
+    PIE.scope = b.getAttribute('data-scope');
+    var all = el('pieScopes').querySelectorAll('button');
+    for(var i = 0; i < all.length; i++){
+      all[i].classList.toggle('on', all[i] === b);
+    }
+    renderPie();
+  });
+  el('piePrev').addEventListener('click', function(){ pieShift(-1); });
+  el('pieNext').addEventListener('click', function(){ pieShift(1); });
   el('wkPrev').addEventListener('click', function(){ WKS.start = shiftDay(WKS.start, -7); renderWeek(); });
-  el('wkNext').addEventListener('click', function(){ WKS.start = shiftDay(WKS.start, 7); renderWeek(); });
-  el('wkThis').addEventListener('click', function(){ WKS.start = weekStartKey(); renderWeek(); });
+  el('wkNext').addEventListener('click', function(){ WKS.start = shiftDay(WKS.start, 7); renderWeek(); });  el('wkThis').addEventListener('click', function(){ WKS.start = weekStartKey(); renderWeek(); });
   el('mnPrev').addEventListener('click', function(){ WKS.month = shiftMonth(WKS.month, -1); renderMonth(); });
   el('mnNext').addEventListener('click', function(){ WKS.month = shiftMonth(WKS.month, 1); renderMonth(); });
   el('mnThis').addEventListener('click', function(){ WKS.month = todayKey().slice(0,7); renderMonth(); });
