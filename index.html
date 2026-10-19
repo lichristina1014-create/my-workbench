@@ -368,15 +368,25 @@ input,select,textarea{font-family:inherit;font-size:16px}
   background:rgba(233,242,251,.95);border:1px dashed #86AEDB;
   display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#3F6E9C;
 }
+/* 按住 Option 拖动 = 复制：预览格换成绿色，原件留在原地 */
+.tl-ghost.copy{border-color:#6FBE9C;background:rgba(233,247,241,.95);color:#2F8A6C}
+body.altkey .blk,body.altkey .doti{cursor:copy}
+.blk.copying{box-shadow:0 0 0 1.5px rgba(111,190,156,.85),0 4px 14px rgba(46,59,71,.13)}
 /* 半小时格里的「小事」圆点行 */
 .dotline{position:absolute;left:2px;right:2px;z-index:3;display:flex;flex-wrap:wrap;gap:4px;pointer-events:none}
 .doti{
-  pointer-events:auto;display:inline-flex;align-items:center;gap:5px;max-width:100%;
+  position:relative;pointer-events:auto;display:inline-flex;align-items:center;gap:5px;max-width:100%;
   height:20px;padding:0 8px 0 7px;border-radius:8px;background:#fff;
   border:1px solid #EDF3F7;font-size:11.5px;color:var(--ink2);
   cursor:grab;touch-action:none;transition:border-color .14s,box-shadow .14s;
 }
 .doti.dragging{cursor:grabbing;box-shadow:0 4px 14px rgba(46,59,71,.18);border-color:#CFE2F4;background:#fff}
+.doti.copying{cursor:copy;border-color:#8FD3B4;background:#F6FDFA;
+  box-shadow:0 0 0 1.5px rgba(111,190,156,.6),0 4px 14px rgba(46,59,71,.16)}
+.doti.copying::after{
+  content:"+";position:absolute;right:-5px;top:-6px;width:13px;height:13px;border-radius:50%;
+  background:#6FBE9C;color:#fff;font-size:10px;font-weight:700;line-height:13px;text-align:center;
+}
 .doti i{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
 .doti b{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .doti:hover{border-color:#D8E6F0;color:var(--ink);box-shadow:0 1px 4px rgba(46,59,71,.09)}
@@ -490,6 +500,80 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .fab{display:none}
 .dockmask{display:none}
 
+/* ================= 周历（7 天并排） ================= */
+.wk-wrap{
+  --wh:22px;
+  border:1px solid var(--line);border-radius:14px;background:#fff;
+  overflow-y:auto;overflow-x:hidden;max-height:min(70vh,660px);
+  -webkit-overflow-scrolling:touch;
+}
+.wk-heads{
+  position:sticky;top:0;z-index:4;display:grid;grid-template-columns:32px repeat(7,minmax(0,1fr));
+  background:#fff;border-bottom:1px solid var(--line2);
+}
+.wk-hd{padding:6px 2px 5px;text-align:center;cursor:pointer;border-right:1px solid var(--line2);min-width:0;transition:background .14s}
+.wk-hd:last-child{border-right:0}
+.wk-hd b{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);line-height:1.3}
+.wk-hd span{display:block;font-size:10px;color:var(--ink3);font-variant-numeric:tabular-nums;line-height:1.35}
+.wk-hd .wk-hd-tot{font-size:9px;color:#C3CFD8;line-height:1.4}
+.wk-hd.has .wk-hd-tot{color:#93A6B3;font-weight:500}
+.wk-hd:hover{background:#F7FBFE}
+.wk-hd.on{background:#F1F8FE}
+.wk-hd.on b,.wk-hd.on span{color:#3F7CAE}
+.wk-corner{border-right:1px solid var(--line2);background:#FCFDFE}
+.wk-bodies{display:grid;grid-template-columns:32px repeat(7,minmax(0,1fr))}
+.wk-gutter{
+  position:relative;height:calc(var(--wh) * 24);border-right:1px solid var(--line2);
+  background:#FCFDFE;
+}
+.wk-gutter span{position:absolute;left:0;right:5px;text-align:right;font-size:9px;color:var(--ink3);transform:translateY(-5px)}
+.wk-gutter span:last-child{transform:translateY(-100%)}
+.wk-body{
+  position:relative;height:calc(var(--wh) * 24);border-right:1px solid var(--line2);min-width:0;
+  background:repeating-linear-gradient(to bottom,#E8F0F5 0 1px,transparent 1px var(--wh));
+}
+.wk-body:last-child{border-right:0}
+.wk-blk{
+  position:absolute;z-index:2;border-radius:4px;overflow:hidden;
+  padding:1px 4px 0;font-size:9px;line-height:1.25;color:var(--ink);
+  background:var(--tint);border-left:2.5px solid var(--bar);
+  white-space:nowrap;text-overflow:ellipsis;
+}
+.wk-blk.tiny{padding:0;font-size:0;border-left-width:3px}
+.wk-now{position:absolute;left:0;right:0;height:0;border-top:1px solid #E2796F;z-index:3;pointer-events:none}
+
+/* ================= 月历（每天一格） ================= */
+.mn-wrap{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+.mn-dow{display:grid;grid-template-columns:repeat(7,1fr);background:#FBFDFE;border-bottom:1px solid var(--line2)}
+.mn-dow span{text-align:center;font-size:11px;color:var(--ink3);padding:6px 0}
+.mn-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:106px}
+.mc{
+  position:relative;display:flex;flex-direction:column;gap:3px;min-width:0;cursor:pointer;
+  padding:5px 5px 4px;border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);
+  transition:background .14s;
+}
+.mc:nth-child(7n){border-right:0}
+.mc:hover{background:#F8FCFF}
+.mc.out{background:#FCFDFE}
+.mc.out .mc-d{color:#C6D2DB}
+.mc.on{background:#F2F9FF}
+.mc.on::after{content:"";position:absolute;inset:2px;border:1.5px solid #CFE4F5;border-radius:7px;pointer-events:none}
+.mc-top{display:flex;align-items:baseline;gap:4px;min-width:0}
+.mc-d{font-size:12px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;line-height:1.25}
+.mc.today .mc-d{background:#5C93C7;color:#fff;border-radius:9px;padding:0 5px;box-shadow:0 1px 3px rgba(92,147,199,.35)}
+.mc-tot{margin-left:auto;font-size:9px;color:var(--ink3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.mc-bar{display:flex;height:3.5px;border-radius:2px;overflow:hidden;background:#F2F7F9;gap:1px}
+.mc-bar i{display:block;height:100%}
+.mc-list{display:flex;flex-direction:column;gap:3px;min-width:0;overflow:hidden}
+.mc-it{display:flex;align-items:center;gap:4px;font-size:10.5px;line-height:1.4;color:var(--ink);min-width:0}
+.mc-it i{width:3px;height:12px;border-radius:1.5px;flex:0 0 3px}
+.mc-it em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mc-it b{font-weight:500;color:var(--ink3);font-size:8.5px;margin-left:auto;flex:0 0 auto;letter-spacing:-.2px}
+.mc-more{font-size:9.5px;color:var(--ink3);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mn-legend{display:flex;gap:5px 14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--ink3)}
+.mn-legend span{display:inline-flex;align-items:center;gap:5px}
+.mn-legend i{width:8px;height:8px;border-radius:3px;flex:0 0 8px}
+
 @media (max-width:1199px){
   .layout{grid-template-columns:168px minmax(0,1fr) 288px;gap:11px}
   .rail button{font-size:13px;padding:0 9px;gap:7px}
@@ -527,6 +611,25 @@ input,select,textarea{font-family:inherit;font-size:16px}
     box-shadow:0 8px 22px rgba(134,174,219,.5);cursor:pointer}
   .fab:active{transform:scale(.94)}
   .fab.hidden{display:none !important}
+
+  /* 手机上 6 个页签要挤得下 */
+  .rail button{font-size:10.5px;line-height:1.15;white-space:normal}
+
+  .wk-wrap{--wh:18px;max-height:none}
+  .wk-hd{padding:5px 1px 4px}
+  .wk-hd b{font-size:10.5px}
+  .wk-hd span{font-size:9px}
+  .wk-blk{font-size:8px;padding:0 2px}
+  .mn-grid{grid-auto-rows:84px}
+  .mc{padding:4px 3px 3px;gap:2px}
+  .mc-d{font-size:11px}
+  .mc-tot{display:none}
+  .mc-it{font-size:9px;gap:3px}
+  .mc-it i{height:9px}
+  .mc-it b{display:none}
+  .mc-it:not(:first-child) em{display:none}
+  .mc.on::after{inset:1px}
+  .mn-legend{font-size:10.5px;gap:4px 10px}
 }
 </style>
 </head>
@@ -568,6 +671,14 @@ input,select,textarea{font-family:inherit;font-size:16px}
     <button data-target="secTimeline">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
       时间轴
+    </button>
+    <button data-target="secWeek">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 9.5h18"/><path d="M8.5 4.5v15M15.5 4.5v15"/></svg>
+      周历
+    </button>
+    <button data-target="secMonth">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15.5" rx="2.5"/><path d="M3 9h18M8 4.5V2.5M16 4.5V2.5"/><circle cx="8.3" cy="13" r=".9" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r=".9" fill="currentColor" stroke="none"/><circle cx="15.7" cy="13" r=".9" fill="currentColor" stroke="none"/><circle cx="8.3" cy="16.6" r=".9" fill="currentColor" stroke="none"/><circle cx="12" cy="16.6" r=".9" fill="currentColor" stroke="none"/></svg>
+      月历
     </button>
     <button data-target="secList">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
@@ -637,10 +748,58 @@ input,select,textarea{font-family:inherit;font-size:16px}
     <p class="tl-tip">
       <b>点一下空白处</b>＝往这个半小时格里记一件小事（彩色圆点，不占时长，可以连着记好几件）；
       <b>按住往下拖</b>＝记一段时间。拖动色块可以整体挪动，拖色块底部可以改结束时间；
-      <b>圆点也能直接拖</b>，拖到哪一格就落到哪一格。点一下可以改内容或删除。
+      <b>圆点也能直接拖</b>，拖到哪一格就落到哪一格。点一下可以改内容或删除；
+      <b>按住 Option（⌥）再拖</b>＝原件不动，在原地复制一份到拖到的地方。
     </p>
 
     <div class="sesslist" id="timelineList"></div>
+  </section>
+
+  <!-- ============ 模块 2b：周历（7 天并排） ============ -->
+  <section class="sec pane" id="secWeek">
+    <div class="sec-head">
+      <h2>周历</h2>
+      <span class="sec-hint">七天并排看，点某天的日期就跳到那天的时间轴</span>
+    </div>
+
+    <div class="tl-bar">
+      <span class="daynav">
+        <button id="wkPrev" title="上一周">&lsaquo;</button>
+        <span id="wkLabel">—</span>
+        <button id="wkNext" title="下一周">&rsaquo;</button>
+      </span>
+      <button id="wkThis" class="fb">回到本周</button>
+    </div>
+
+    <div class="wk-wrap" id="wkWrap">
+      <div class="wk-heads" id="wkHeads"></div>
+      <div class="wk-bodies" id="wkBodies"></div>
+    </div>
+    <p class="tl-tip" id="wkSum"></p>
+  </section>
+
+  <!-- ============ 模块 2c：月历（每天一格） ============ -->
+  <section class="sec pane" id="secMonth">
+    <div class="sec-head">
+      <h2>月历</h2>
+      <span class="sec-hint">哪天上过课、哪天运动了，看格子里的颜色和条数就知道</span>
+    </div>
+
+    <div class="tl-bar">
+      <span class="daynav">
+        <button id="mnPrev" title="上个月">&lsaquo;</button>
+        <span id="mnLabel">—</span>
+        <button id="mnNext" title="下个月">&rsaquo;</button>
+      </span>
+      <button id="mnThis" class="fb">回到本月</button>
+    </div>
+
+    <div class="mn-wrap">
+      <div class="mn-dow"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+      <div class="mn-grid" id="mnGrid"></div>
+    </div>
+    <div class="mn-legend" id="mnLegend"></div>
+    <p class="tl-tip" id="mnSum"></p>
   </section>
 
   <!-- ============ 模块 3：全部任务 ============ -->
@@ -858,6 +1017,8 @@ var CAT_COLOR = { '教学':'#A79BE0', '科研':'#E18B84', '行政':'#7FA8DC', '�
 var CAT_BG = { '教学':'#F3F0FC', '科研':'#FCEEEC', '行政':'#EEF4FC', '家庭生活':'#ECF7F1' };
 /* 色块描边：同色系再浅一档 */
 var CAT_EDGE = { '教学':'#DCD5F7', '科研':'#F5D8D3', '行政':'#CFE2F4', '家庭生活':'#C9E9DC' };
+/* 周历格子小，CAT_BG 在白底上几乎看不见，单独用深一档的填充 */
+var CAT_BG_WK = { '教学':'#E3DBFA', '科研':'#F9D8D2', '行政':'#D6E6F8', '家庭生活':'#D5EFE3' };
 var SAMPLE_TITLES = ['批改《数字电路》实验报告','准备《数字逻辑》第3-4节课件','修改论文第二稿讨论部分','填写学院年度考核表','晚饭后陪孩子读绘本'];
 
 var K_DRAFT='wb_lifehub_draft', K_RUN='wb_lifehub_running', K_CACHE='wb_lifehub_cache', K_CAT='wb_lifehub_lastcat', K_PANE='wb_lifehub_pane';
@@ -1895,7 +2056,8 @@ function tlDown(e){
     if(slot0 == null) slot0 = Math.floor(mD / 30) * 30;
     TL.drag = {
       mode: 'dot', dot: dotEl, id: did, ss: dss, pid: e.pointerId, hr: hrD,
-      y0: e.clientY, slot0: slot0, slot: slot0, moved: false, ghost: null
+      y0: e.clientY, slot0: slot0, slot: slot0, moved: false, ghost: null,
+      copy: !!e.altKey
     };
     try{ cv.setPointerCapture(e.pointerId); }catch(err){}
     if(e.pointerType !== 'touch'){ e.preventDefault(); }
@@ -1911,7 +2073,8 @@ function tlDown(e){
     blk: blk, y0: e.clientY, anchor: m, cur: m, pid: e.pointerId, hr: hr,
     s0: blk ? Number(blk.getAttribute('data-s')) : 0,
     e0: blk ? Number(blk.getAttribute('data-e')) : 0,
-    ns: null, ne: null, moved: false, ghost: null
+    ns: null, ne: null, moved: false, ghost: null,
+    copy: (e.altKey && !!blk && !e.target.getAttribute('data-grip'))
   };
   try{ cv.setPointerCapture(e.pointerId); }catch(err){}
 
@@ -1937,11 +2100,13 @@ function tlMove(e){
   if(d.mode === 'dot'){
     if(!d.moved) return;
     /* 半小时一档，拖一格就是一格，落点吸附 */
+    d.copy = !!e.altKey;
     var stepD = d.hr / 2;
     var rowsD = Math.round((e.clientY - d.y0) / stepD);
     var nsD = Math.max(0, Math.min(1410, d.slot0 + rowsD * 30));
     d.slot = nsD;
-    d.dot.classList.add('dragging');
+    d.dot.classList.toggle('dragging', !d.copy);
+    d.dot.classList.toggle('copying', d.copy);
     d.dot.style.transform = 'translateY(' + (rowsD * stepD).toFixed(1) + 'px)';
     if(!d.ghost){
       var gD = document.createElement('div');
@@ -1951,7 +2116,8 @@ function tlMove(e){
     }
     d.ghost.style.top = (nsD / 60 * d.hr) + 'px';
     d.ghost.style.height = stepD + 'px';
-    d.ghost.textContent = minToHM(nsD) + '–' + minToHM(Math.min(1440, nsD + 30));
+    d.ghost.classList.toggle('copy', d.copy);
+    d.ghost.textContent = (d.copy ? '＋ ' : '') + minToHM(nsD) + '–' + minToHM(Math.min(1440, nsD + 30));
     return;
   }
 
@@ -1962,10 +2128,32 @@ function tlMove(e){
     d.ghost.style.height = ((b - a) / 60 * d.hr) + 'px';
     d.ghost.textContent = minToHM(a) + '–' + minToHM(b);
   }else if(d.mode === 'move' && d.blk){
+    d.copy = !!e.altKey;
     var span = d.e0 - d.s0;
     var ns = Math.max(0, Math.min(1440 - span, d.s0 + (d.cur - d.anchor)));
     d.ns = ns; d.ne = ns + span;
-    d.blk.style.top = (ns / 60 * d.hr) + 'px';
+    if(d.copy){
+      /* 复制模式：原件留在原地不动，只画一个落点预览 */
+      d.blk.style.top = (d.s0 / 60 * d.hr) + 'px';
+      d.blk.classList.add('copying');
+      if(!d.ghost){
+        var gM = document.createElement('div');
+        gM.className = 'tl-ghost';
+        cv.appendChild(gM);
+        d.ghost = gM;
+      }
+      d.ghost.classList.add('copy');
+      d.ghost.style.top = (ns / 60 * d.hr) + 'px';
+      d.ghost.style.height = Math.max(8, span / 60 * d.hr) + 'px';
+      d.ghost.textContent = '＋ ' + minToHM(ns) + '–' + minToHM(ns + span);
+    }else{
+      if(d.ghost){
+        if(d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+        d.ghost = null;
+      }
+      d.blk.classList.remove('copying');
+      d.blk.style.top = (ns / 60 * d.hr) + 'px';
+    }
   }else if(d.mode === 'resize' && d.blk){
     var ne = Math.max(d.s0 + 15, Math.min(1440, d.cur));
     d.ne = ne;
@@ -1976,6 +2164,7 @@ function tlUp(e){
   var d = TL.drag;
   if(!d || e.pointerId !== d.pid) return;
   var wasMoved = d.moved;
+  var copy = !!d.copy;
   var cur = d.cur, anchor = d.anchor;
   var mode = d.mode, blk = d.blk, s0 = d.s0, e0 = d.e0, ns = d.ns, ne = d.ne;
   var blkId = blk ? blk.getAttribute('data-id') : null;
@@ -1983,8 +2172,10 @@ function tlUp(e){
   tlCleanup();
   if(mode === 'dot' && dotNode){
     dotNode.classList.remove('dragging');
+    dotNode.classList.remove('copying');
     dotNode.style.transform = '';
   }
+  if(mode === 'move' && blk) blk.classList.remove('copying');
   if(mode === 'dot'){
     if(!wasMoved){
       if(ssDot){
@@ -1995,9 +2186,15 @@ function tlUp(e){
       return;
     }
     if(dotTo !== dotFrom && ssDot){
-      persistBlock({ id: dotId, name: ssDot['任务内容'] || '未命名', cat: ssDot['分类'] || '家庭生活',
-        s: dotTo, e: dotTo });
-      toast('已挪到 ' + minToHM(dotTo) + ' 这一格');
+      if(copy){
+        persistBlock({ id: null, name: ssDot['任务内容'] || '未命名', cat: ssDot['分类'] || '家庭生活',
+          s: dotTo, e: dotTo });
+        toast('已复制一件到 ' + minToHM(dotTo) + ' 这一格');
+      }else{
+        persistBlock({ id: dotId, name: ssDot['任务内容'] || '未命名', cat: ssDot['分类'] || '家庭生活',
+          s: dotTo, e: dotTo });
+        toast('已挪到 ' + minToHM(dotTo) + ' 这一格');
+      }
     }
     return;
   }
@@ -2031,6 +2228,13 @@ function tlUp(e){
 
   if(mode === 'move'){
     if(ns == null || ns === s0) return;
+    if(copy){
+      /* 复制：原记录不动，另存一条新的到落点 */
+      persistBlock({ id: null, name: (ss && ss['任务内容']) || '未命名',
+        cat: (ss && ss['分类']) || '家庭生活', s: ns, e: ne });
+      toast('已复制一段到 ' + minToHM(ns) + '–' + minToHM(ne));
+      return;
+    }
     persistBlock({ id: blkId, name: (ss && ss['任务内容']) || '未命名', cat: (ss && ss['分类']) || '家庭生活', s: ns, e: ne });
   }else if(mode === 'resize'){
     if(ne == null || ne === e0) return;
@@ -2042,8 +2246,10 @@ function tlCancel(e){
   if(!d || e.pointerId !== d.pid) return;
   if(d.mode === 'dot' && d.dot){
     d.dot.classList.remove('dragging');
+    d.dot.classList.remove('copying');
     d.dot.style.transform = '';
   }
+  if(d.mode === 'move' && d.blk) d.blk.classList.remove('copying');
   tlCleanup();
   renderDayGrid();
 }
@@ -2173,6 +2379,180 @@ function renderTimeline(){
   renderTimelineList();
   autoScrollTimeline();
 }
+/* ================= 9b. 周历 / 月历 ================= */
+var WKS = { start: weekStartKey(), month: todayKey().slice(0,7) };
+
+function weekStartOf(key){
+  var p = String(key).split('-');
+  var d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  var w = d.getDay();
+  d.setDate(d.getDate() - (w === 0 ? 6 : w - 1));
+  return dayKey(d);
+}
+function shiftMonth(cur, n){
+  var p = String(cur).split('-');
+  var d = new Date(Number(p[0]), Number(p[1])-1+n, 1);
+  return d.getFullYear() + '-' + pad(d.getMonth()+1);
+}
+function shortMin(m){
+  m = Math.round(Number(m) || 0);
+  if(m <= 0) return '';
+  if(m < 60) return m + 'm';
+  var h = Math.floor(m/60), r = m % 60;
+  return h + 'h' + (r ? ' ' + r + 'm' : '');
+}
+/* 只扫一遍全表，把区间内的计时记录按天分桶 */
+function aggRange(fromKey, toKey){
+  var map = {};
+  state.sessions.forEach(function(ss){
+    var k = dateKey(ss['日期']) || dateKey(ss['开始时间']);
+    if(!k || k < fromKey || k > toKey) return;
+    var c = CATS.indexOf(ss['分类']) !== -1 ? ss['分类'] : '家庭生活';
+    var o = map[k] || (map[k] = { min:0, byCat:{}, items:[], dots:0 });
+    var m = Number(ss['时长分钟']) || 0;
+    if(m <= 0){ o.dots++; return; }
+    var sp = sessionSpan(ss);
+    o.min += m;
+    o.byCat[c] = (o.byCat[c] || 0) + m;
+    o.items.push({ name: ss['任务内容'] || '未命名', cat: c, min: m, s: sp.s, e: sp.e });
+  });
+  Object.keys(map).forEach(function(k){
+    var o = map[k];
+    /* 月历只列最长的几条，所以先按时长降序 */
+    o.items.sort(function(a,b){ return b.min - a.min || a.s - b.s; });
+    /* 周历里时间重叠的要分列，否则互相盖住 */
+    var lay = o.items.map(function(it){ return { s: it.s, e: it.e, ref: it }; });
+    layoutCols(lay);
+    lay.forEach(function(x){ x.ref.lane = x.lane; x.ref.lanes = x.lanes; });
+  });
+  return map;
+}
+function weekColH(){
+  var w = el('wkWrap'); var v = w ? parseFloat(getComputedStyle(w).getPropertyValue('--wh')) : 22;
+  return v > 0 ? v : 22;
+}
+function renderWeek(){
+  var heads = el('wkHeads'), bodies = el('wkBodies');
+  if(!heads || !bodies) return;
+  var start = WKS.start, end = shiftDay(start, 6), t = todayKey();
+  var agg = aggRange(start, end);
+  var WH = weekColH();
+  var d0 = dateAt(start, 0), d1 = dateAt(end, 0);
+  el('wkLabel').textContent = (d0.getMonth()+1) + '月' + d0.getDate() + '日 – '
+    + (d1.getMonth()+1) + '月' + d1.getDate() + '日';
+
+  var hh = '<div class="wk-corner"></div>', bb = '', sumMin = 0, sumBy = {}, dots = 0;
+  var gg = '';
+  for(var h = 0; h <= 24; h += 6){
+    gg += '<span style="top:' + (h * WH) + 'px">' + pad(h) + '</span>';
+  }
+  bb = '<div class="wk-gutter">' + gg + '</div>';
+  for(var i = 0; i < 7; i++){
+    var k = shiftDay(start, i), dd = dateAt(k, 0), isT = (k === t);
+    var a = agg[k];
+    var dayTot = (a && a.min) ? shortMin(a.min) : '';
+    hh += '<div class="wk-hd' + (isT ? ' on' : '') + (dayTot ? ' has' : '') + '" data-day="' + k + '">'
+      + '<b>周' + WD[dd.getDay()] + '</b>'
+      + '<span>' + (dd.getMonth()+1) + '/' + dd.getDate() + '</span>'
+      + '<span class="wk-hd-tot">' + (dayTot || '—') + '</span></div>';
+
+    var inner = '';
+    if(a){
+      sumMin += a.min; dots += a.dots;
+      Object.keys(a.byCat).forEach(function(c){ sumBy[c] = (sumBy[c] || 0) + a.byCat[c]; });
+      a.items.forEach(function(it){
+        var top = it.s / 60 * WH;
+        var hg = Math.max(8, (it.e - it.s) / 60 * WH);
+        var lanes = it.lanes || 1, lane = it.lane || 0, wp = 100 / lanes;
+        inner += '<div class="wk-blk' + (hg < 15 ? ' tiny' : '') + '"'
+          + ' style="top:' + top.toFixed(1) + 'px;height:' + hg.toFixed(1) + 'px;'
+          + 'left:calc(' + (wp*lane).toFixed(2) + '% + 1px);width:calc(' + wp.toFixed(2) + '% - 2px);'
+          + '--tint:' + (CAT_BG_WK[it.cat] || '#EDF2F6') + ';--bar:' + (CAT_COLOR[it.cat] || '#B7C6D2') + '"'
+          + ' title="' + esc(it.name + ' · ' + minToHM(it.s) + '–' + minToHM(it.e)) + '">'
+          + esc(it.name) + '</div>';
+      });
+    }
+    if(isT){
+      var nw = new Date(), nm = nw.getHours() * 60 + nw.getMinutes();
+      inner += '<div class="wk-now" style="top:' + (nm/60*WH).toFixed(1) + 'px"></div>';
+    }
+    bb += '<div class="wk-body" data-day="' + k + '">' + inner + '</div>';
+  }
+  heads.innerHTML = hh;
+  bodies.innerHTML = bb;
+
+  var txt = '这一周共 <b>' + fmtMin(sumMin) + '</b>';
+  CATS.forEach(function(c){ if(sumBy[c]) txt += ' · ' + c + ' ' + fmtMin(sumBy[c]); });
+  if(dots) txt += ' · 另有 ' + dots + ' 件小事';
+  el('wkSum').innerHTML = (sumMin || dots) ? txt : '这一周还没有记录。左右翻能看到任意一周。';
+}
+function weekScrollTop(){
+  var w = el('wkWrap'); if(!w) return;
+  w.scrollTop = Math.max(0, 6 * weekColH() - 30);
+}
+function renderMonth(){
+  var host = el('mnGrid'); if(!host) return;
+  var cur = WKS.month, p = String(cur).split('-');
+  var y = Number(p[0]), mo = Number(p[1]);
+  var firstKey = cur + '-01';
+  var lead = (new Date(y, mo-1, 1).getDay() + 6) % 7;
+  var days = new Date(y, mo, 0).getDate();
+  var cells = Math.ceil((lead + days) / 7) * 7;
+  var start = shiftDay(firstKey, -lead);
+  var agg = aggRange(start, shiftDay(start, cells - 1));
+  var t = todayKey();
+  el('mnLabel').textContent = y + ' 年 ' + mo + ' 月';
+
+  var html = '', sumMin = 0, sumBy = {}, nd = 0;
+  /* 手机格子窄矮，少列一条，多的收进「+N」 */
+  var maxItems = window.innerWidth <= 1023 ? 2 : 3;
+  for(var i = 0; i < cells; i++){
+    var k = shiftDay(start, i), dd = dateAt(k, 0), a = agg[k];
+    var out = k.slice(0, 7) !== cur;
+    var bar = '', list = '', tot = '', extra = [];
+    if(a){
+      if(!out){
+        sumMin += a.min; nd += a.dots;
+        Object.keys(a.byCat).forEach(function(c){ sumBy[c] = (sumBy[c] || 0) + a.byCat[c]; });
+      }
+      if(a.min > 0){
+        CATS.forEach(function(c){
+          var m = a.byCat[c] || 0;
+          if(m) bar += '<i style="width:' + (m / a.min * 100).toFixed(2) + '%;background:' + CAT_COLOR[c] + '"></i>';
+        });
+        tot = shortMin(a.min);
+        list = a.items.slice(0, maxItems).map(function(it){
+          return '<span class="mc-it"><i style="background:' + (CAT_COLOR[it.cat] || '#B7C6D2') + '"></i>'
+            + '<em>' + esc(it.name) + '</em><b>' + shortMin(it.min) + '</b></span>';
+        }).join('');
+        if(a.items.length > maxItems) extra.push('+' + (a.items.length - maxItems) + ' 项');
+      }
+      if(a.dots) extra.push('小事 ' + a.dots);
+      if(extra.length) list += '<span class="mc-more">' + extra.join(' · ') + '</span>';
+    }
+    html += '<div class="mc' + (out ? ' out' : '') + (k === t ? ' today on' : '') + '" data-day="' + k + '">'
+      + '<div class="mc-top"><span class="mc-d">' + dd.getDate() + '</span>'
+      + (tot ? '<span class="mc-tot">' + tot + '</span>' : '') + '</div>'
+      + (bar ? '<div class="mc-bar">' + bar + '</div>' : '')
+      + '<div class="mc-list">' + list + '</div></div>';
+  }
+  host.innerHTML = html;
+
+  el('mnLegend').innerHTML = CATS.map(function(c){
+    return '<span><i style="background:' + CAT_COLOR[c] + '"></i>' + c + '</span>';
+  }).join('') + '<span><i style="background:#CFE2F4"></i>顶上那条越长 = 这块占得越多</span>';
+
+  var s = '这个月共 <b>' + fmtMin(sumMin) + '</b>';
+  CATS.forEach(function(c){ if(sumBy[c]) s += ' · ' + c + ' ' + fmtMin(sumBy[c]); });
+  if(nd) s += ' · 另有 ' + nd + ' 件小事';
+  el('mnSum').innerHTML = (sumMin || nd) ? s : '这个月还没有记录。左右翻能看到任意一个月。';
+}
+function gotoDay(k){
+  if(!k) return;
+  state.timelineDay = k;
+  switchPane('secTimeline');
+  if(k !== todayKey()) toast('已跳到 ' + k.slice(5).replace('-', '/') + ' 那天');
+}
 function renderGantt(){
   var open = [], done = [];
   state.tasks.forEach(function(tk){ (isDone(tk) ? done : open).push(tk); });
@@ -2209,6 +2589,8 @@ function renderAll(){
   renderAllList();
   renderStats();
   renderTimeline();
+  renderWeek();
+  renderMonth();
   renderGantt();
   renderTimerBar();
 }
@@ -2701,6 +3083,8 @@ function switchPane(id, noScroll){
     TL.scrolledFor = null;
     renderTimeline();
   }
+  if(id === 'secWeek'){ renderWeek(); weekScrollTop(); }
+  if(id === 'secMonth'){ renderMonth(); }
   if(!noScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2723,6 +3107,36 @@ function bindEvents(){
   document.querySelectorAll('#segnav button').forEach(function(b){
     b.addEventListener('click', function(){ switchPane(b.getAttribute('data-target')); });
   });
+
+  /* 周历 / 月历：翻页 + 点某天跳过去 */
+  el('wkPrev').addEventListener('click', function(){ WKS.start = shiftDay(WKS.start, -7); renderWeek(); });
+  el('wkNext').addEventListener('click', function(){ WKS.start = shiftDay(WKS.start, 7); renderWeek(); });
+  el('wkThis').addEventListener('click', function(){ WKS.start = weekStartKey(); renderWeek(); });
+  el('mnPrev').addEventListener('click', function(){ WKS.month = shiftMonth(WKS.month, -1); renderMonth(); });
+  el('mnNext').addEventListener('click', function(){ WKS.month = shiftMonth(WKS.month, 1); renderMonth(); });
+  el('mnThis').addEventListener('click', function(){ WKS.month = todayKey().slice(0,7); renderMonth(); });
+  el('wkHeads').addEventListener('click', function(ev){
+    var n = ev.target.closest ? ev.target.closest('.wk-hd') : null;
+    if(n) gotoDay(n.getAttribute('data-day'));
+  });
+  el('mnGrid').addEventListener('click', function(ev){
+    var n = ev.target.closest ? ev.target.closest('.mc') : null;
+    if(n) gotoDay(n.getAttribute('data-day'));
+  });
+  var rzT = null;
+  window.addEventListener('resize', function(){
+    if(rzT) clearTimeout(rzT);
+    rzT = setTimeout(function(){ renderWeek(); renderMonth(); }, 200);
+  });
+
+  /* 按住 Option 时把光标换成「复制」，一眼知道现在是复制不是移动 */
+  window.addEventListener('keydown', function(ev){
+    if(ev.altKey) document.body.classList.add('altkey');
+  });
+  window.addEventListener('keyup', function(ev){
+    if(!ev.altKey) document.body.classList.remove('altkey');
+  });
+  window.addEventListener('blur', function(){ document.body.classList.remove('altkey'); });
 
   el('fabAdd').addEventListener('click', openDock);
   el('dockMask').addEventListener('click', closeDock);
