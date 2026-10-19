@@ -228,6 +228,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .sessrow .st{font-variant-numeric:tabular-nums;color:var(--ink3);flex:0 0 auto}
 .sessrow .sn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
 .sessrow .sd{flex:0 0 auto;color:#8A9AA6}
+.sessrow.dotrow .st{color:#B3C0CA}
 
 /* ---------- 确认弹窗 / 锚点偏移 ---------- */
 .sec{scroll-margin-top:82px}
@@ -367,6 +368,17 @@ input,select,textarea{font-family:inherit;font-size:16px}
   background:rgba(134,174,219,.22);border:1px dashed #86AEDB;
   display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#4E7CA8;
 }
+/* 半小时格里的「小事」圆点行 */
+.dotline{position:absolute;left:2px;right:2px;z-index:3;display:flex;flex-wrap:wrap;gap:4px;pointer-events:none}
+.doti{
+  pointer-events:auto;display:inline-flex;align-items:center;gap:5px;max-width:100%;
+  height:20px;padding:0 8px 0 7px;border-radius:8px;background:#fff;
+  border:1px solid #EDF3F7;font-size:11.5px;color:var(--ink2);
+  cursor:pointer;transition:.14s;
+}
+.doti i{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.doti b{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doti:hover{border-color:#D8E6F0;color:var(--ink);box-shadow:0 1px 4px rgba(46,59,71,.09)}
 .tl-now{position:absolute;left:0;right:0;height:0;border-top:1.5px solid #E2796F;z-index:4;pointer-events:none}
 .tl-now::before{content:"";position:absolute;left:-4px;top:-4.5px;width:8px;height:8px;border-radius:50%;background:#E2796F}
 .tl-empty{
@@ -391,6 +403,10 @@ input,select,textarea{font-family:inherit;font-size:16px}
 #shName{width:100%;height:48px;border:1px solid var(--line);border-radius:13px;padding:0 13px;font-size:16px;background:#FBFDFE;outline:none;transition:.18s}
 #shName:focus{border-color:#B7D3E8;background:#fff;box-shadow:0 0 0 3px rgba(134,174,219,.13)}
 .sh-detail{font-size:12px;color:var(--ink3);margin:8px 3px 0;min-height:17px;line-height:1.5}
+.sh-kind{display:flex;gap:4px;background:#F3F8FB;border-radius:11px;padding:3px;margin:0 0 11px}
+.sh-kind button{flex:1;height:32px;border:0;background:transparent;border-radius:9px;
+  font-size:12.5px;color:var(--ink2);cursor:pointer;transition:.15s;font-weight:500}
+.sh-kind button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(46,59,71,.1)}
 .sh-detail b{color:var(--ink2);font-weight:600}
 .sh-time{display:flex;align-items:center;gap:12px;margin:14px 0 4px;flex-wrap:wrap}
 .sh-time label{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2)}
@@ -618,8 +634,8 @@ input,select,textarea{font-family:inherit;font-size:16px}
       <div class="tl-canvas" id="tlCanvas"></div>
     </div>
     <p class="tl-tip">
-      拖动色块可以整体挪动，拖色块底部可以改结束时间，点一下可以改内容或删除。
-      手机上没有拖习惯的话，直接<b>点一下空白处</b>也能补一段。
+      <b>点一下空白处</b>＝往这个半小时格里记一件小事（彩色圆点，不占时长，可以连着记好几件）；
+      <b>按住往下拖</b>＝记一段时间。拖动色块可以整体挪动，拖色块底部可以改结束时间，点一下可以改内容或删除。
     </p>
 
     <div class="sesslist" id="timelineList"></div>
@@ -764,12 +780,16 @@ input,select,textarea{font-family:inherit;font-size:16px}
     <b id="shTitle">补记一段</b>
     <button class="sh-x" id="shClose" aria-label="关闭">&times;</button>
   </div>
+  <div class="sh-kind" id="shKind">
+    <button data-kind="dot" class="on">一件小事</button>
+    <button data-kind="block">一段时间</button>
+  </div>
   <input id="shName" type="text" placeholder="这段时间做了什么？例如：收拾书房" maxlength="60" autocomplete="off">
   <div class="sh-detail" id="shDetail"></div>
   <div class="catpick" id="shCats"></div>
   <div class="sh-time">
-    <label>开始 <input id="shStart" type="time" step="300" aria-label="开始时间"></label>
-    <label>结束 <input id="shEnd" type="time" step="300" aria-label="结束时间"></label>
+    <label><span id="shStartLab">开始</span> <input id="shStart" type="time" step="1800" aria-label="开始时间"></label>
+    <label id="shEndLab">结束 <input id="shEnd" type="time" step="300" aria-label="结束时间"></label>
     <span class="sh-dur" id="shDur"></span>
   </div>
   <div class="sh-acts">
@@ -926,8 +946,8 @@ var RULES = [
 /* 补记场景的补充词（补在原有词表后面，不覆盖） */
 RULES[0].kw.push('改作业','讲题','出卷','学业指导','毕设指导');
 RULES[1].kw.push('读文献','改论文','写论文','跑数据','数据分析');
-RULES[2].kw.push('对接','材料整理','通知下发','填报');
-RULES[3].kw.push('晨间','整理','收纳','采买','遛狗','宠物','追剧','午睡','看剧','喝咖啡','喝茶','午休','通勤','上班路上','下班路上','地铁','公交','堵车');
+RULES[2].kw.push('对接','材料整理','通知下发','填报','邮件','回邮件','发邮件','寄件');
+RULES[3].kw.push('晨间','整理','收纳','采买','遛狗','宠物','追剧','午睡','看剧','喝咖啡','喝茶','午休','通勤','上班路上','下班路上','地铁','公交','堵车','取快递','快递','缴费','充话费');
 
 /* 生活类二级细项：不新增色相，只用来在块内做小字标签 */
 var LIFE_SUBS = [
@@ -1397,6 +1417,7 @@ function blockSub(text, cat){
 function dayBlocks(){
   var out = [];
   sessionsOfDay(state.timelineDay).forEach(function(ss){
+    if(isDot(ss)) return;              /* 小事不画块，走圆点那一行 */
     var a = timeOf(ss['开始时间']);
     if(!a) return;
     var b = timeOf(ss['结束时间']);
@@ -1449,15 +1470,22 @@ function sessionSpan(ss){
   if(e <= s) e = s + 1;
   return { s: s, e: e };
 }
+/* 「一件小事」= 时长为 0 的记录：只记先后，不占时间 */
+function isDot(ss){ return (Number(ss['时长分钟']) || 0) === 0; }
+function dotSlot(ss){
+  var a = timeOf(ss['开始时间']);
+  if(!a) return null;
+  return Math.floor(a.mm / 30) * 30;
+}
 
 /* ---------- 渲染 ---------- */
 function renderStructure(){
   var list = sessionsOfDay(state.timelineDay);
-  var by = {}, subs = {}, total = 0;
+  var by = {}, subs = {}, total = 0, dotN = 0;
   list.forEach(function(ss){
     var c = CATS.indexOf(ss['分类']) !== -1 ? ss['分类'] : '家庭生活';
     var m = Number(ss['时长分钟']) || 0;
-    if(m <= 0) return;
+    if(m <= 0){ dotN++; return; }
     by[c] = (by[c] || 0) + m;
     total += m;
     if(c === '家庭生活'){
@@ -1478,14 +1506,17 @@ function renderStructure(){
   el('structLegend').innerHTML = legend;
 
   if(!total){
-    el('structSum').innerHTML = '这一天还没有记录。在下面空白处按住往下拖，就能补上第一段。';
+    el('structSum').innerHTML = dotN
+      ? ('这一天记了 <b>' + dotN + ' 件小事</b>，还没记时长。<br><span style="color:#9FAEB9">想统计占比的话，挑几段按住往下拖，补成时间段就行。</span>')
+      : '这一天还没有记录。点一下空白处可以记一件小事，按住往下拖可以补一段时间。';
     el('structSub').innerHTML = '';
     return;
   }
   var top = '', topMin = -1;
   CATS.forEach(function(c){ if((by[c] || 0) > topMin){ topMin = by[c] || 0; top = c; } });
   el('structSum').innerHTML = '这一天 <b>' + top + '</b> 最久 · ' + fmtMin(topMin)
-    + '，占 ' + Math.round(topMin / total * 100) + '%　<span style="color:#9FAEB9">（总计 ' + fmtMin(total) + '）</span>';
+    + '，占 ' + Math.round(topMin / total * 100) + '%　<span style="color:#9FAEB9">（总计 ' + fmtMin(total) + '）</span>'
+    + (dotN ? '　<span style="color:#9FAEB9">· 另有 ' + dotN + ' 件小事</span>' : '');
 
   var subKeys = Object.keys(subs).sort(function(a,b){ return subs[b] - subs[a]; });
   if(subKeys.length){
@@ -1508,9 +1539,10 @@ function renderDayGrid(){
   var cv = el('tlCanvas');
   if(!cv) return;
   var items = layoutCols(dayBlocks());
+  var dots = dotGroups();
   var html = '';
-  if(!items.length){
-    html += '<div class="tl-empty">这一天还没有记录<br><span>在空白处按住往下拖一段试试</span></div>';
+  if(!items.length && !dots.length){
+    html += '<div class="tl-empty">这一天还没有记录<br><span>点一下记一件小事，按住往下拖记一段时间</span></div>';
   }
   items.forEach(function(it){
     var top = it.s / 60 * hr;
@@ -1532,12 +1564,58 @@ function renderDayGrid(){
       + '<div class="blk-grip" data-grip="1"></div>'
       + '</div>';
   });
+  /* 半小时格里的「小事」：彩点 + 文字，允许换行并向下让位 */
+  dots.forEach(function(gp){
+    html += '<div class="dotline" style="top:' + (gp.slot / 60 * hr).toFixed(1) + 'px">';
+    gp.items.forEach(function(ss){
+      var col = CAT_COLOR[ss['分类'] || ''] || '#B7C6D2';
+      html += '<span class="doti" data-id="' + esc(String(ss.record_id || '')) + '"'
+        + ' title="' + esc((ss['任务内容'] || '') + ' · ' + minToHM(gp.slot) + ' 这一格') + '">'
+        + '<i style="background:' + col + '"></i><b>' + esc(ss['任务内容'] || '') + '</b></span>';
+    });
+    html += '</div>';
+  });
   if(state.timelineDay === todayKey()){
     var now = new Date();
     var nm = now.getHours() * 60 + now.getMinutes();
     html += '<div class="tl-now" style="top:' + (nm/60*hr).toFixed(1) + 'px"></div>';
   }
   cv.innerHTML = html;
+  /* 圆点行会换行长高，相邻半小时格互相让位；贴着色块底边时也往下让一点 */
+  var blocks = [];
+  var bNodes = cv.querySelectorAll('.blk');
+  for(var bi = 0; bi < bNodes.length; bi++){
+    var bt = parseFloat(bNodes[bi].style.top) || 0;
+    var bh = parseFloat(bNodes[bi].style.height) || 0;
+    blocks.push([bt, bt + bh]);
+  }
+  var lines = cv.querySelectorAll('.dotline'), prevBottom = -1;
+  for(var k = 0; k < lines.length; k++){
+    var t = parseFloat(lines[k].style.top) || 0;
+    for(var pass = 0; pass < 2; pass++){
+      for(var m = 0; m < blocks.length; m++){
+        /* 只在小幅重叠（贴着底边）时下移；整段被色块盖住就让它浮在上面 */
+        if(t >= blocks[m][0] && t < blocks[m][1] && (blocks[m][1] - t) < 26) t = blocks[m][1] + 2;
+      }
+    }
+    if(t < prevBottom + 2){ t = prevBottom + 2; lines[k].style.top = t + 'px'; }
+    else lines[k].style.top = t + 'px';
+    prevBottom = t + lines[k].offsetHeight;
+  }
+}
+
+/* 把一天里的小事按半小时格分组 */
+function dotGroups(){
+  var out = [], map = {};
+  sessionsOfDay(state.timelineDay).forEach(function(ss){
+    if(!isDot(ss)) return;
+    var slot = dotSlot(ss);
+    if(slot == null) return;
+    if(!map[slot]){ map[slot] = { slot: slot, items: [] }; out.push(map[slot]); }
+    map[slot].items.push(ss);
+  });
+  out.sort(function(a,b){ return a.slot - b.slot; });
+  return out;
 }
 
 function renderTimelineList(){
@@ -1551,13 +1629,14 @@ function renderTimelineList(){
   var html = '';
   list.forEach(function(ss){
     var sp = sessionSpan(ss);
+    var dot = isDot(ss);
     var col = CAT_COLOR[ss['分类'] || ''] || '#B7C6D2';
     var sub = blockSub(ss['任务内容'] || '', ss['分类'] || '');
-    html += '<div class="sessrow" data-id="' + esc(String(ss.record_id || '')) + '">'
+    html += '<div class="sessrow' + (dot ? ' dotrow' : '') + '" data-id="' + esc(String(ss.record_id || '')) + '">'
       + '<i style="background:' + col + '"></i>'
-      + '<span class="st">' + minToHM(sp.s) + '–' + minToHM(sp.e) + '</span>'
+      + '<span class="st">' + (dot ? '· ' + minToHM(sp.s) : minToHM(sp.s) + '–' + minToHM(sp.e)) + '</span>'
       + '<span class="sn">' + esc(ss['任务内容'] || '') + (sub ? ' <em style="font-style:normal;color:#9FAEB9">· ' + esc(sub) + '</em>' : '') + '</span>'
-      + '<span class="sd">' + esc(fmtMin(ss['时长分钟'])) + '</span>'
+      + '<span class="sd">' + (dot ? '' : esc(fmtMin(ss['时长分钟']))) + '</span>'
       + '</div>';
   });
   box.innerHTML = html;
@@ -1602,12 +1681,23 @@ function updateSheetDetail(reclassify){
   }
   var cat = sheetCat();
   var sub = (cat === '家庭生活') ? subOf(t, cat) : '';
+  var dotMode = sheetKind() === 'dot';
   var s = hmToMin(el('shStart').value), e = hmToMin(el('shEnd').value);
-  var dur = (s != null && e != null && e > s) ? (e - s) : 0;
+  var dur = (!dotMode && s != null && e != null && e > s) ? (e - s) : 0;
   el('shDur').textContent = dur ? fmtMin(dur) : '';
 
   var msg;
-  if(s != null && e != null && e <= s){
+  if(dotMode){
+    /* 小事只落在半小时格里，不比较结束时间 */
+    var slot = (s == null) ? null : Math.floor(s / 30) * 30;
+    var parts = [];
+    parts.push(slot == null ? '选一下放进哪半小时'
+      : ('放在 <b>' + minToHM(slot) + '–' + minToHM(Math.min(1440, slot + 30)) + '</b> 这一格'));
+    if(!t) parts.push('写一句做了什么');
+    else if(cat) parts.push('<b>' + esc(cat) + (sub ? ' · ' + esc(sub) : '') + '</b>');
+    else parts.push('点上面选一个分类');
+    msg = parts.join('　·　');
+  }else if(s != null && e != null && e <= s){
     msg = '结束时间要晚于开始时间';
   }else if(!t){
     msg = '写一句就自动帮你归类';
@@ -1620,16 +1710,51 @@ function updateSheetDetail(reclassify){
 }
 function openSheet(p){
   TL.edit = p;
-  el('shTitle').textContent = p.id ? '编辑这一段' : '补记一段';
   el('shName').value = p.name || '';
   el('shStart').value = minToHM(p.s);
-  el('shEnd').value = minToHM(p.e);
+  el('shEnd').value = minToHM(p.e != null ? p.e : p.s);
   el('shDel').classList.toggle('hidden', !p.id);
   renderSheetCats(p.cat || '');
+  var kind = p.kind || ((p.e != null && p.e > p.s) ? 'block' : 'dot');
+  setSheetKind(kind, true);
   updateSheetDetail(false);
   el('blkMask').classList.remove('hidden');
   el('blkSheet').classList.remove('hidden');
   setTimeout(function(){ try{ el('shName').focus(); }catch(e){} }, 140);
+}
+function sheetKind(){
+  var b = el('shKind').querySelector('button.on');
+  return b ? b.getAttribute('data-kind') : 'dot';
+}
+/* 一件小事：只选半小时格，不填结束、不计时长 */
+function setSheetKind(k, silent){
+  var dot = k === 'dot';
+  var btns = el('shKind').querySelectorAll('button');
+  for(var i = 0; i < btns.length; i++){
+    btns[i].classList.toggle('on', btns[i].getAttribute('data-kind') === k);
+  }
+  el('shEndLab').classList.toggle('hidden', dot);
+  el('shDur').classList.toggle('hidden', dot);
+  el('shStartLab').textContent = dot ? '放在' : '开始';
+  el('shStart').setAttribute('step', dot ? '1800' : '300');
+  el('shName').placeholder = dot
+    ? '刚才顺手做了什么？例如：回邮件、浇花'
+    : '这段时间做了什么？例如：收拾书房';
+  var editing = !!(TL.edit && TL.edit.id);
+  el('shTitle').textContent = dot
+    ? (editing ? '改这一件' : '记一件小事')
+    : (editing ? '编辑这一段' : '补记一段');
+  el('shSave').textContent = dot ? '记上' : '保存';
+  if(!silent){
+    if(dot){
+      var s1 = hmToMin(el('shStart').value);
+      if(s1 != null){ el('shStart').value = minToHM(Math.floor(s1 / 30) * 30); }
+    }else{
+      var s2 = hmToMin(el('shStart').value), e2 = hmToMin(el('shEnd').value);
+      if(s2 != null && (e2 == null || e2 <= s2)) el('shEnd').value = minToHM(Math.min(1440, s2 + 30));
+    }
+    updateSheetDetail(false);
+  }
 }
 function closeSheet(){
   el('blkMask').classList.add('hidden');
@@ -1651,6 +1776,7 @@ function recalcTotals(title){
 }
 function persistBlock(p){
   var day = state.timelineDay;
+  var isD = p.e === p.s;
   var props = {
     '任务内容': p.name,
     '分类': p.cat,
@@ -1671,7 +1797,8 @@ function persistBlock(p){
     cacheSave();
     recalcTotals(p.name);
     renderAll();
-    toast(p.id ? '这一段已更新' : '已记上 ' + minToHM(p.s) + '–' + minToHM(p.e));
+    toast(p.id ? (isD ? '已更新' : '这一段已更新')
+      : (isD ? ('已记上 · ' + minToHM(p.s) + ' 这一格') : ('已记上 ' + minToHM(p.s) + '–' + minToHM(p.e))));
     return;
   }
 
@@ -1680,7 +1807,7 @@ function persistBlock(p){
     ? db.updateRecord({ databaseId: 'qgG4Bg18jaBhmBHdvjwNHw', recordId: p.id, properties: props })
     : apiAddSession(props);
   job.then(function(){
-    toast(p.id ? '这一段已更新' : '已记上');
+    toast(p.id ? '已更新' : (isD ? '已记上这一件' : '已记上'));
     return reloadData();
   }).catch(function(){
     toast('没保存成功，检查下网络再试');
@@ -1688,21 +1815,43 @@ function persistBlock(p){
   });
 }
 function saveSheet(){
+  var kind = sheetKind();
   var name = el('shName').value.trim();
-  var s = hmToMin(el('shStart').value), e = hmToMin(el('shEnd').value);
-  if(!name){ toast('写一句这段时间做了什么'); try{ el('shName').focus(); }catch(err){} return; }
-  if(s == null || e == null){ toast('填一下开始和结束时间'); return; }
-  if(e <= s){ toast('结束时间要晚于开始时间'); return; }
+  if(!name){
+    toast(kind === 'dot' ? '写一句这件小事是什么' : '写一句这段时间做了什么');
+    try{ el('shName').focus(); }catch(err){}
+    return;
+  }
+  var editing = !!(TL.edit && TL.edit.id);
+  var s, e;
+  if(kind === 'dot'){
+    s = hmToMin(el('shStart').value);
+    if(s == null){ toast('选一下放进哪半小时'); return; }
+    s = Math.max(0, Math.min(1410, Math.floor(s / 30) * 30));
+    e = s;
+  }else{
+    s = hmToMin(el('shStart').value); e = hmToMin(el('shEnd').value);
+    if(s == null || e == null){ toast('填一下开始和结束时间'); return; }
+    if(e <= s){ toast('结束时间要晚于开始时间'); return; }
+  }
   var cat = sheetCat() || classify(name) || '家庭生活';
-  var p = { id: TL.edit && TL.edit.id, name: name, cat: cat, s: s, e: e };
+  persistBlock({ id: TL.edit && TL.edit.id, name: name, cat: cat, s: s, e: e, kind: kind });
+
+  /* 连着记好几件小事：面板不关，清空后接着写下一条 */
+  if(kind === 'dot' && !editing){
+    el('shName').value = '';
+    el('shDetail').innerHTML = '已记上 <b>' + esc(name) + '</b>　·　接着写下一件，好了点右上角 ×';
+    setTimeout(function(){ try{ el('shName').focus(); }catch(err){} }, 90);
+    return;
+  }
   closeSheet();
-  persistBlock(p);
 }
 function deleteBlock(){
   if(!TL.edit || !TL.edit.id) return;
   var p = TL.edit, id = p.id;
+  var isD = !!(p.kind ? p.kind === 'dot' : p.e === p.s);
   closeSheet();
-  askConfirm('删除「' + p.name + '」这一段？', function(){
+  askConfirm('删除「' + p.name + '」' + (isD ? '这一件？' : '这一段？'), function(){
     if(!db){
       var i = -1;
       state.sessions.forEach(function(x, k){ if(String(x.record_id) === String(id)) i = k; });
@@ -1733,6 +1882,17 @@ function tlDown(e){
   if(e.button != null && e.button !== 0) return;
   var cv = el('tlCanvas');
   if(!cv) return;
+  var dotEl = e.target.closest ? e.target.closest('.doti') : null;
+  if(dotEl){
+    var did = dotEl.getAttribute('data-id');
+    var dss = findSession(did);
+    if(dss){
+      var slot = dotSlot(dss);
+      openSheet({ id: did, name: dss['任务内容'] || '', cat: dss['分类'] || '',
+        s: slot == null ? 0 : slot, e: slot == null ? 0 : slot, kind: 'dot' });
+    }
+    return;
+  }
   var blk = e.target.closest ? e.target.closest('.blk') : null;
   var rect = cv.getBoundingClientRect();
   var hr = hourH();
@@ -1795,10 +1955,12 @@ function tlUp(e){
   if(mode === 'create'){
     var a = Math.min(anchor, cur), b = Math.max(anchor, cur);
     if(!wasMoved || b - a < 15){
-      a = anchor; b = Math.min(1440, a + 30);
-      if(b - a < 15){ a = 1410; b = 1440; }
+      /* 点一下 = 往这个半小时格里记一件小事；拖开 = 记一段时间 */
+      var slot = Math.max(0, Math.min(1410, Math.floor(anchor / 30) * 30));
+      openSheet({ id:null, name:'', cat:'', s:slot, e:slot, kind:'dot' });
+      return;
     }
-    openSheet({ id:null, name:'', cat:'', s:a, e:b });
+    openSheet({ id:null, name:'', cat:'', s:a, e:b, kind:'block' });
     return;
   }
 
@@ -1845,6 +2007,16 @@ function bindTimeline(){
   el('shClose').addEventListener('click', closeSheet);
   el('shSave').addEventListener('click', saveSheet);
   el('shDel').addEventListener('click', deleteBlock);
+  el('shKind').addEventListener('click', function(ev){
+    var b = ev.target.closest ? ev.target.closest('button') : null;
+    if(b && b.getAttribute('data-kind')) setSheetKind(b.getAttribute('data-kind'));
+  });
+  /* 小事模式：回车就记上，接着写下一条 */
+  el('shName').addEventListener('keydown', function(ev){
+    if((ev.key === 'Enter' || ev.keyCode === 13) && sheetKind() === 'dot'){
+      ev.preventDefault(); saveSheet();
+    }
+  });
   el('shName').addEventListener('input', function(){ updateSheetDetail(true); });
   el('shCats').addEventListener('click', function(ev){
     var b = ev.target.closest ? ev.target.closest('.cpick') : null;
@@ -2354,6 +2526,7 @@ function buildICS(){
     if(!dk || !a) return;
     var name = ss['任务内容'] || '未命名';
     var mins = Number(ss['时长分钟']) || 0;
+    if(mins <= 0) return;          /* 「一件小事」只记先后，不进日历 */
     var st = new Date(dk + 'T00:00:00');
     st.setMinutes(a.mm);
     var en = new Date(st.getTime() + (mins > 0 ? mins : 30) * 60000);
