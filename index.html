@@ -324,6 +324,101 @@ input,select,textarea{font-family:inherit;font-size:16px}
   .qa-row2 .btn.primary{flex:1 1 100%}
   .tb-acts .btn{padding:0 12px;font-size:13px}
 }
+/* ================= 时间轴（拖拽补记） ================= */
+.tl-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.tl-bar .daynav{margin:0}
+.struct-wrap{margin-bottom:14px}
+.struct-bar{display:flex;height:13px;border-radius:8px;overflow:hidden;background:#F2F7F9;gap:2px}
+.struct-bar i{display:block;height:100%;transition:width .3s}
+.struct-legend{display:flex;flex-wrap:wrap;gap:5px 15px;margin-top:9px;font-size:12px;color:var(--ink2)}
+.struct-legend span{display:inline-flex;align-items:center;gap:5px}
+.struct-legend i{width:8px;height:8px;border-radius:3px;flex:0 0 8px}
+.struct-legend b{font-weight:600;color:var(--ink)}
+.struct-sum{margin:9px 0 0;font-size:12.5px;color:var(--ink2);line-height:1.65}
+.struct-sum b{color:var(--ink);font-weight:600}
+.struct-sub{margin:5px 0 0;font-size:12px;color:var(--ink3);line-height:1.6}
+.struct-sub em{font-style:normal;color:var(--ink2)}
+
+.tl-wrap{
+  --hr:56px;
+  display:flex;height:min(64vh,640px);overflow-y:auto;overflow-x:hidden;
+  border:1px solid var(--line);border-radius:14px;background:#fff;
+  position:relative;-webkit-overflow-scrolling:touch;
+}
+.tl-gutter{flex:0 0 48px;height:calc(var(--hr) * 24);position:relative;background:#FCFDFE;border-right:1px solid var(--line2)}
+.tl-gutter span{position:absolute;left:0;right:7px;text-align:right;font-size:10.5px;color:var(--ink3);transform:translateY(-6px)}
+.tl-gutter span:last-child{transform:translateY(-100%)}
+.tl-canvas{
+  flex:1 1 auto;height:calc(var(--hr) * 24);position:relative;touch-action:pan-y;
+  cursor:crosshair;user-select:none;-webkit-user-select:none;
+}
+.tl-canvas::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,#EDF3F7 0 1px,transparent 1px var(--hr));
+}
+.tl-canvas::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,transparent 0 calc(var(--hr)/2 - 1px),#F7FAFC calc(var(--hr)/2 - 1px) calc(var(--hr)/2),transparent calc(var(--hr)/2) var(--hr));
+}
+.blk{
+  position:absolute;z-index:2;border-radius:8px;padding:4px 7px 3px;overflow:hidden;
+  color:#fff;cursor:grab;touch-action:none;box-shadow:0 1px 3px rgba(46,59,71,.14);
+  border:1px solid rgba(255,255,255,.45);box-sizing:border-box;
+}
+.blk:active{cursor:grabbing}
+.blk-info b{display:block;font-size:10.5px;font-weight:500;opacity:.9;line-height:1.35;letter-spacing:.2px}
+.blk-info span{display:block;font-size:12px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk-info em{display:block;font-style:normal;font-size:10px;opacity:.82;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk-grip{position:absolute;left:0;right:0;bottom:0;height:11px;cursor:ns-resize;touch-action:none}
+.blk-grip::after{content:"";display:block;width:24px;height:3px;border-radius:2px;background:rgba(255,255,255,.55);margin:5px auto 0;opacity:0;transition:opacity .15s}
+.blk:hover .blk-grip::after{opacity:1}
+.tl-ghost{
+  position:absolute;left:2px;right:2px;z-index:3;border-radius:8px;pointer-events:none;
+  background:rgba(134,174,219,.22);border:1px dashed #86AEDB;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#4E7CA8;
+}
+.tl-now{position:absolute;left:0;right:0;height:0;border-top:1.5px solid #E2796F;z-index:4;pointer-events:none}
+.tl-now::before{content:"";position:absolute;left:-4px;top:-4.5px;width:8px;height:8px;border-radius:50%;background:#E2796F}
+.tl-empty{
+  position:absolute;left:0;right:0;top:38%;text-align:center;font-size:13px;color:var(--ink3);
+  pointer-events:none;line-height:1.9;z-index:1;
+}
+.tl-empty span{font-size:11.5px;color:#B3C0CA}
+.tl-tip{margin:10px 2px 0;font-size:11.5px;color:var(--ink3);line-height:1.7}
+.tl-tip b{color:var(--ink2);font-weight:600}
+
+/* 补记弹层 */
+.blkmask{position:fixed;inset:0;background:rgba(46,59,71,.26);z-index:55}
+.sheet{
+  position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:540px;z-index:60;
+  background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -10px 40px rgba(46,59,71,.2);
+  padding:14px 16px calc(16px + env(safe-area-inset-bottom));animation:shUp .22s ease-out;
+}
+@keyframes shUp{from{transform:translate(-50%,24px);opacity:.6}to{transform:translate(-50%,0);opacity:1}}
+.sh-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sh-head b{font-size:15px;font-weight:600}
+.sh-x{width:32px;height:32px;border:0;border-radius:10px;background:#F4F7F9;color:var(--ink2);font-size:18px;line-height:1;cursor:pointer}
+#shName{width:100%;height:48px;border:1px solid var(--line);border-radius:13px;padding:0 13px;font-size:16px;background:#FBFDFE;outline:none;transition:.18s}
+#shName:focus{border-color:#B7D3E8;background:#fff;box-shadow:0 0 0 3px rgba(134,174,219,.13)}
+.sh-detail{font-size:12px;color:var(--ink3);margin:8px 3px 0;min-height:17px;line-height:1.5}
+.sh-detail b{color:var(--ink2);font-weight:600}
+.sh-time{display:flex;align-items:center;gap:12px;margin:14px 0 4px;flex-wrap:wrap}
+.sh-time label{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2)}
+.sh-time input{width:108px;height:42px;border:1px solid var(--line);border-radius:11px;padding:0 9px;font-size:15px;background:#FBFDFE;color:var(--ink)}
+.sh-dur{font-size:12px;color:var(--ink3);margin-left:auto;white-space:nowrap}
+.sh-acts{display:flex;gap:10px;margin-top:16px}
+.sh-acts .btn{flex:1;height:47px}
+.btn.danger{color:#C4746A;border-color:#F0D9D5;background:#FFF7F5}
+.btn.danger:hover{background:#FDEEEA}
+
+@media (max-width:768px){
+  .tl-wrap{--hr:52px;height:min(58vh,520px)}
+  .tl-gutter{flex-basis:42px}
+  .tl-gutter span{font-size:10px;right:6px}
+  .blk-info b{font-size:10px}
+  .blk-info span{font-size:11.5px}
+}
+
 @media (max-width:340px){
   .qa-row{flex-wrap:wrap}
   #qaInput{flex:1 1 100%}
@@ -362,6 +457,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
 
   <nav class="segnav" id="segnav">
     <button class="seg active" data-target="secToday">今天要处理</button>
+    <button class="seg" data-target="secTimeline">时间轴</button>
     <button class="seg" data-target="secList">全部任务</button>
     <button class="seg" data-target="secStats">统计</button>
   </nav>
@@ -411,7 +507,42 @@ input,select,textarea{font-family:inherit;font-size:16px}
     </div>
   </section>
 
-  <!-- ============ 模块 2：全部任务 ============ -->
+  <!-- ============ 模块 2：时间轴（拖拽补记） ============ -->
+  <section class="sec" id="secTimeline">
+    <div class="sec-head">
+      <h2>时间轴</h2>
+      <span class="sec-hint">在空白处按住往下拖，补记一段</span>
+    </div>
+
+    <div class="tl-bar">
+      <span class="daynav">
+        <button id="dayPrev" title="前一天">&lsaquo;</button>
+        <span id="dayLabel">今天</span>
+        <button id="dayNext" title="后一天">&rsaquo;</button>
+      </span>
+      <button id="tlToday" class="fb">回到今天</button>
+    </div>
+
+    <div class="struct-wrap">
+      <div class="struct-bar" id="structBar"></div>
+      <div class="struct-legend" id="structLegend"></div>
+      <p class="struct-sum" id="structSum"></p>
+      <p class="struct-sub" id="structSub"></p>
+    </div>
+
+    <div class="tl-wrap" id="tlWrap">
+      <div class="tl-gutter" id="tlGutter"></div>
+      <div class="tl-canvas" id="tlCanvas"></div>
+    </div>
+    <p class="tl-tip">
+      拖动色块可以整体挪动，拖色块底部可以改结束时间，点一下可以改内容或删除。
+      手机上没有拖习惯的话，直接<b>点一下空白处</b>也能补一段。
+    </p>
+
+    <div class="sesslist" id="timelineList"></div>
+  </section>
+
+  <!-- ============ 模块 3：全部任务 ============ -->
   <section class="sec" id="secList">
     <div class="sec-head">
       <h2>全部任务</h2>
@@ -467,17 +598,6 @@ input,select,textarea{font-family:inherit;font-size:16px}
     <div class="chart-title">近 7 天专注时长<span class="sub" id="weekSub"></span></div>
     <div class="svgbox" id="weekBox"></div>
 
-    <div class="chart-title">
-      每日时间轴
-      <span class="daynav">
-        <button id="dayPrev" title="前一天">&lsaquo;</button>
-        <span id="dayLabel">今天</span>
-        <button id="dayNext" title="后一天">&rsaquo;</button>
-      </span>
-    </div>
-    <div class="svgbox" id="timelineBox"></div>
-    <div class="sesslist" id="timelineList"></div>
-
     <div class="chart-title">任务甘特图<span class="sub">近 10 天</span></div>
     <div class="svgbox" id="ganttBox"></div>
     <div class="gantt-note" id="ganttNote"></div>
@@ -499,6 +619,27 @@ input,select,textarea{font-family:inherit;font-size:16px}
         结束计时
       </button>
     </div>
+  </div>
+</div>
+
+<!-- 补记弹层 -->
+<div id="blkMask" class="blkmask hidden"></div>
+<div id="blkSheet" class="sheet hidden" role="dialog" aria-modal="true" aria-label="补记时间段">
+  <div class="sh-head">
+    <b id="shTitle">补记一段</b>
+    <button class="sh-x" id="shClose" aria-label="关闭">&times;</button>
+  </div>
+  <input id="shName" type="text" placeholder="这段时间做了什么？例如：收拾书房" maxlength="60" autocomplete="off">
+  <div class="sh-detail" id="shDetail"></div>
+  <div class="catpick" id="shCats"></div>
+  <div class="sh-time">
+    <label>开始 <input id="shStart" type="time" step="300" aria-label="开始时间"></label>
+    <label>结束 <input id="shEnd" type="time" step="300" aria-label="结束时间"></label>
+    <span class="sh-dur" id="shDur"></span>
+  </div>
+  <div class="sh-acts">
+    <button id="shDel" class="btn ghost danger">删除</button>
+    <button id="shSave" class="btn primary">保存</button>
   </div>
 </div>
 
@@ -631,6 +772,38 @@ var RULES = [
   { cat:'行政', kw:['开会','例会','会议','纪要','报表','打印','复印','审批','报销','发票','材料','通知','值班','填表','表格','报送','上报','汇总','统计表','协调','签字','盖章','工会','档案','行政','事务','排班','汇报','公文','年度考核','考核表','评估','职称','聘期','检查','验收','招标','采购','学院','教务处','党委','办公室','值班表'] },
   { cat:'家庭生活', kw:['孩子','儿子','女儿','宝宝','接娃','送娃','陪孩子','亲子','读绘本','绘本','家务','做饭','买菜','超市','医院','体检','复诊','运动','健身','跑步','散步','瑜伽','游泳','父母','爸妈','家人','家庭','生活','打扫','打扫卫生','洗衣','晾衣','收拾','睡觉','早睡','洗澡','理发','旅游','度假','自我提升','读书','听书','学英语','背单词','练字','冥想','理财'] }
 ];
+/* 补记场景的补充词（补在原有词表后面，不覆盖） */
+RULES[0].kw.push('改作业','讲题','出卷','学业指导','毕设指导');
+RULES[1].kw.push('读文献','改论文','写论文','跑数据','数据分析');
+RULES[2].kw.push('对接','材料整理','通知下发','填报');
+RULES[3].kw.push('晨间','整理','收纳','采买','遛狗','宠物','追剧','午睡','看剧','喝咖啡','喝茶','午休');
+
+/* 生活类二级细项：不新增色相，只用来在块内做小字标签 */
+var LIFE_SUBS = [
+  { sub:'运动', kw:['晨间运动','运动','健身','跑步','晨跑','夜跑','散步','快走','瑜伽','游泳','骑行','爬山','打球','拉伸','锻炼','球'] },
+  { sub:'家务', kw:['家务','收拾','打扫','整理','收纳','洗衣','晾衣','叠衣','做饭','洗碗','拖地','擦','清理','买菜','超市','采买','采购','垃圾','修'] },
+  { sub:'陪伴', kw:['陪孩子','陪娃','亲子','读绘本','绘本','孩子','儿子','女儿','宝宝','接娃','送娃','父母','爸妈','家人','家庭','老公','爱人','陪'] },
+  { sub:'自我', kw:['自我提升','读书','看书','听书','学英语','背单词','练字','练琴','画画','冥想','网课','学习','阅读','笔记','听课'] },
+  { sub:'健康', kw:['医院','体检','复诊','看病','挂号','牙医','吃药','理疗','针灸'] },
+  { sub:'闲适', kw:['休息','睡觉','午睡','午休','看剧','追剧','刷手机','发呆','喝咖啡','喝茶','聊天','刷视频'] }
+];
+function subOf(text, cat){
+  if(!text) return '';
+  if(cat && cat !== '家庭生活') return '';
+  var best = '', score = 0;
+  for(var i = 0; i < LIFE_SUBS.length; i++){
+    var g = LIFE_SUBS[i], sc = 0;
+    for(var j = 0; j < g.kw.length; j++){
+      if(text.indexOf(g.kw[j]) !== -1) sc += g.kw[j].length;
+    }
+    if(sc > score){ score = sc; best = g.sub; }
+  }
+  return best;
+}
+function classifyDetail(text){
+  var cat = classify(text);
+  return { cat: cat, sub: cat === '家庭生活' ? subOf(text, cat) : '' };
+}
 function classify(text){
   if(!text) return '';
   var best = '', bestScore = 0, tie = false;
@@ -1030,59 +1203,506 @@ function weekSVG(days){
   out += '</svg>';
   return out;
 }
-function timelineSVG(dayK){
-  var list = sessionsOfDay(dayK);
-  var W = 680, padL = 12, padR = 12, axisY = 26, top = 40, laneH = 30;
-  var axisW = W - padL - padR, perMin = axisW / 1440;
-  var lanes = [], items = [];
-  list.forEach(function(ss){
-    var a1 = timeOf(ss['开始时间']);
-    if(!a1) return;
-    var s = a1.mm;
-    var b1 = timeOf(ss['结束时间']);
-    var e = b1 ? b1.mm : s + (Number(ss['时长分钟']) || 0);
+/* ================= 9. 时间轴：网格渲染 + 拖拽补记 ================= */
+var TL = { drag:null, edit:null, scrolledFor:null };
+
+function hourH(){
+  var w = el('tlWrap');
+  if(!w) return 56;
+  var v = parseFloat(getComputedStyle(w).getPropertyValue('--hr'));
+  return v > 0 ? v : 56;
+}
+function minToHM(m){
+  m = Math.max(0, Math.min(1440, Math.round(Number(m) || 0)));
+  if(m === 1440) return '24:00';
+  return pad(Math.floor(m/60)) + ':' + pad(m%60);
+}
+function hmToMin(v){
+  if(!v) return null;
+  var p = String(v).split(':');
+  if(p.length < 2) return null;
+  var h = Number(p[0]), m = Number(p[1]);
+  if(isNaN(h) || isNaN(m)) return null;
+  return h*60 + m;
+}
+function dateAt(k, mins){
+  var p = String(k).split('-');
+  return new Date(Number(p[0]), Number(p[1])-1, Number(p[2]),
+    Math.floor(mins/60), Math.round(mins%60), 0);
+}
+function tlSnap(m, step){
+  step = step || 15;
+  var v = Math.round(m/step)*step;
+  return Math.max(0, Math.min(1440, v));
+}
+function blockSub(text, cat){
+  return (cat === '家庭生活') ? subOf(text, cat) : '';
+}
+function dayBlocks(){
+  var out = [];
+  sessionsOfDay(state.timelineDay).forEach(function(ss){
+    var a = timeOf(ss['开始时间']);
+    if(!a) return;
+    var b = timeOf(ss['结束时间']);
+    var s = a.mm;
+    var e = b ? b.mm : s + (Number(ss['时长分钟']) || 0);
     if(e <= s) e = s + 1;
-    var lane = 0;
-    while(lanes[lane] != null && lanes[lane] > s - 2) lane++;
-    lanes[lane] = e;
-    items.push({ s: s, e: e, lane: lane, ss: ss });
+    out.push({
+      ss: ss, s: s, e: e,
+      fill: CAT_COLOR[ss['分类'] || ''] || '#B7C6D2',
+      sub: blockSub(ss['任务内容'] || '', ss['分类'] || '')
+    });
   });
-  var laneCount = Math.max(1, lanes.length);
-  var H = top + laneCount * laneH + 8;
-  var out = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="每日时间轴">';
-  var i, x;
-  for(i = 0; i <= 24; i += 3){
-    x = padL + i * 60 * perMin;
-    out += '<line x1="'+x.toFixed(1)+'" y1="'+axisY+'" x2="'+x.toFixed(1)+'" y2="'+(H-6)+'" stroke="#F1F6F8" stroke-width="1"/>';
-    out += '<text x="'+x.toFixed(1)+'" y="'+(axisY-7)+'" text-anchor="'+(i === 0 ? 'start' : (i === 24 ? 'end' : 'middle'))+'" font-size="10" fill="#AEBCC6">'+pad(i)+':00</text>';
-  }
-  out += '<line x1="'+padL+'" y1="'+axisY+'" x2="'+(W-padR)+'" y2="'+axisY+'" stroke="#E3EBF0" stroke-width="1"/>';
-  if(!items.length){
-    out += '<text x="'+(W/2)+'" y="'+(top+22)+'" text-anchor="middle" font-size="12" fill="#9FAEB9">这一天还没有计时记录</text>';
-  }
-  items.forEach(function(it){
-    var x1 = padL + it.s * perMin, w = Math.max(3, (it.e - it.s) * perMin);
-    var y = top + it.lane * laneH;
-    var cat = it.ss['分类'] || '';
-    var col = CAT_COLOR[cat] || '#B7C6D2';
-    var tip = esc((it.ss['任务内容'] || '') + ' · ' + pad(Math.floor(it.s/60))+':'+pad(it.s%60)
-      + '–' + pad(Math.floor(it.e/60))+':'+pad(it.e%60) + ' · ' + Math.round(Number(it.ss['时长分钟'])||0) + ' 分');
-    out += '<rect x="'+x1.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(laneH-11)+'" rx="6" fill="'+col+'" opacity="0.82"><title>'+tip+'</title></rect>';
-    if(w > 54){
-      var label = (it.ss['任务内容'] || '').slice(0, Math.floor(w / 13));
-      out += '<text x="'+(x1+6).toFixed(1)+'" y="'+(y+laneH-15)+'" font-size="10.5" fill="#FFFFFF">'+esc(label)+'</text>';
-    }
-    out += '<text x="'+(x1+6).toFixed(1)+'" y="'+(y+laneH+3)+'" font-size="9" fill="#AEBCC6">'+pad(Math.floor(it.s/60))+':'+pad(it.s%60)+'</text>';
-  });
-  if(dayK === todayKey()){
-    var now = new Date();
-    var nx = padL + (now.getHours()*60 + now.getMinutes()) * perMin;
-    out += '<line x1="'+nx.toFixed(1)+'" y1="'+(axisY-3)+'" x2="'+nx.toFixed(1)+'" y2="'+(H-6)+'" stroke="#E2796F" stroke-width="1.4" stroke-dasharray="3 3"/>';
-    out += '<circle cx="'+nx.toFixed(1)+'" cy="'+(axisY-3)+'" r="3" fill="#E2796F"/>';
-  }
-  out += '</svg>';
   return out;
 }
+/* 重叠分列：同一簇内按「第一个空列」分配，避免互相压住 */
+function layoutCols(items){
+  items.sort(function(a,b){ return a.s - b.s || a.e - b.e; });
+  var cluster = [], end = -1;
+  function flush(){
+    if(cluster.length){
+      var n = 0;
+      cluster.forEach(function(it){ if(it.lane + 1 > n) n = it.lane + 1; });
+      cluster.forEach(function(it){ it.lanes = n; });
+    }
+    cluster = []; end = -1;
+  }
+  items.forEach(function(it){
+    if(end !== -1 && it.s >= end) flush();
+    var taken = {};
+    cluster.forEach(function(c){ if(c.e > it.s) taken[c.lane] = 1; });
+    var lane = 0; while(taken[lane]) lane++;
+    it.lane = lane;
+    cluster.push(it);
+    if(it.e > end) end = it.e;
+  });
+  flush();
+  return items;
+}
+function findSession(id){
+  var out = null;
+  state.sessions.forEach(function(x){ if(String(x.record_id) === String(id)) out = x; });
+  return out;
+}
+function sessionSpan(ss){
+  var a = timeOf(ss['开始时间']), b = timeOf(ss['结束时间']);
+  var s = a ? a.mm : 0;
+  var e = b ? b.mm : s + (Number(ss['时长分钟']) || 0);
+  if(e <= s) e = s + 1;
+  return { s: s, e: e };
+}
+
+/* ---------- 渲染 ---------- */
+function renderStructure(){
+  var list = sessionsOfDay(state.timelineDay);
+  var by = {}, subs = {}, total = 0;
+  list.forEach(function(ss){
+    var c = CATS.indexOf(ss['分类']) !== -1 ? ss['分类'] : '家庭生活';
+    var m = Number(ss['时长分钟']) || 0;
+    if(m <= 0) return;
+    by[c] = (by[c] || 0) + m;
+    total += m;
+    if(c === '家庭生活'){
+      var sb = subOf(ss['任务内容'] || '', c) || '其他';
+      subs[sb] = (subs[sb] || 0) + m;
+    }
+  });
+
+  var bar = '', legend = '';
+  CATS.forEach(function(c){
+    var m = by[c] || 0;
+    if(!m) return;
+    bar += '<i style="width:' + (m / total * 100).toFixed(2) + '%;background:' + CAT_COLOR[c] + '"></i>';
+    legend += '<span><i style="background:' + CAT_COLOR[c] + '"></i>' + c
+      + ' <b>' + fmtMin(m) + '</b> · ' + Math.round(m / total * 100) + '%</span>';
+  });
+  el('structBar').innerHTML = total ? bar : '<i style="width:100%;background:#EEF3F6"></i>';
+  el('structLegend').innerHTML = legend;
+
+  if(!total){
+    el('structSum').innerHTML = '这一天还没有记录。在下面空白处按住往下拖，就能补上第一段。';
+    el('structSub').innerHTML = '';
+    return;
+  }
+  var top = '', topMin = -1;
+  CATS.forEach(function(c){ if((by[c] || 0) > topMin){ topMin = by[c] || 0; top = c; } });
+  el('structSum').innerHTML = '这一天 <b>' + top + '</b> 最久 · ' + fmtMin(topMin)
+    + '，占 ' + Math.round(topMin / total * 100) + '%　<span style="color:#9FAEB9">（总计 ' + fmtMin(total) + '）</span>';
+
+  var subKeys = Object.keys(subs).sort(function(a,b){ return subs[b] - subs[a]; });
+  if(subKeys.length){
+    el('structSub').innerHTML = '生活里面：' + subKeys.map(function(k){
+      return '<em>' + esc(k) + '</em> ' + fmtMin(subs[k]);
+    }).join(' · ');
+  }else{
+    el('structSub').innerHTML = '';
+  }
+}
+
+function renderDayGrid(){
+  var hr = hourH();
+  var g = el('tlGutter');
+  if(!g) return;
+  var gi = '';
+  for(var i = 0; i <= 24; i++) gi += '<span style="top:' + (i*hr) + 'px">' + pad(i) + ':00</span>';
+  g.innerHTML = gi;
+
+  var cv = el('tlCanvas');
+  if(!cv) return;
+  var items = layoutCols(dayBlocks());
+  var html = '';
+  if(!items.length){
+    html += '<div class="tl-empty">这一天还没有记录<br><span>在空白处按住往下拖一段试试</span></div>';
+  }
+  items.forEach(function(it){
+    var top = it.s / 60 * hr;
+    var h = Math.max(20, (it.e - it.s) / 60 * hr);
+    var wPct = 100 / it.lanes;
+    var lPct = it.lane * wPct;
+    var name = it.ss['任务内容'] || '未命名';
+    var info = '';
+    if(h >= 38) info += '<b>' + minToHM(it.s) + '–' + minToHM(it.e) + '</b>';
+    info += '<span>' + esc(name) + '</span>';
+    if(h >= 62 && it.sub) info += '<em>' + esc(it.sub) + '</em>';
+    html += '<div class="blk" data-id="' + esc(String(it.ss.record_id || '')) + '"'
+      + ' data-s="' + it.s + '" data-e="' + it.e + '"'
+      + ' style="top:' + top.toFixed(1) + 'px;height:' + h.toFixed(1) + 'px;'
+      + 'left:calc(' + lPct.toFixed(3) + '% + 2px);width:calc(' + wPct.toFixed(3) + '% - 4px);background:' + it.fill + '"'
+      + ' title="' + esc(name + ' · ' + minToHM(it.s) + '–' + minToHM(it.e)) + '">'
+      + '<div class="blk-info">' + info + '</div>'
+      + '<div class="blk-grip" data-grip="1"></div>'
+      + '</div>';
+  });
+  if(state.timelineDay === todayKey()){
+    var now = new Date();
+    var nm = now.getHours() * 60 + now.getMinutes();
+    html += '<div class="tl-now" style="top:' + (nm/60*hr).toFixed(1) + 'px"></div>';
+  }
+  cv.innerHTML = html;
+}
+
+function renderTimelineList(){
+  var box = el('timelineList');
+  if(!box) return;
+  var list = sessionsOfDay(state.timelineDay);
+  if(!list.length){
+    box.innerHTML = '<div class="sessrow"><span class="sn" style="color:#9FAEB9">这一天还没有计时或补记</span></div>';
+    return;
+  }
+  var html = '';
+  list.forEach(function(ss){
+    var sp = sessionSpan(ss);
+    var col = CAT_COLOR[ss['分类'] || ''] || '#B7C6D2';
+    var sub = blockSub(ss['任务内容'] || '', ss['分类'] || '');
+    html += '<div class="sessrow" data-id="' + esc(String(ss.record_id || '')) + '">'
+      + '<i style="background:' + col + '"></i>'
+      + '<span class="st">' + minToHM(sp.s) + '–' + minToHM(sp.e) + '</span>'
+      + '<span class="sn">' + esc(ss['任务内容'] || '') + (sub ? ' <em style="font-style:normal;color:#9FAEB9">· ' + esc(sub) + '</em>' : '') + '</span>'
+      + '<span class="sd">' + esc(fmtMin(ss['时长分钟'])) + '</span>'
+      + '</div>';
+  });
+  box.innerHTML = html;
+}
+
+function autoScrollTimeline(){
+  var wrap = el('tlWrap');
+  if(!wrap) return;
+  if(TL.scrolledFor === state.timelineDay) return;
+  TL.scrolledFor = state.timelineDay;
+  var hr = hourH();
+  var list = sessionsOfDay(state.timelineDay);
+  var target;
+  if(list.length){
+    target = Math.max(0, sessionSpan(list[0]).s - 45);
+  }else if(state.timelineDay === todayKey()){
+    target = Math.max(0, new Date().getHours() * 60 - 90);
+  }else{
+    target = 480;
+  }
+  wrap.scrollTop = target / 60 * hr;
+}
+
+/* ---------- 弹层 ---------- */
+function renderSheetCats(cat){
+  el('shCats').innerHTML = CATS.map(function(c){
+    return '<button type="button" class="cpick ' + (CAT_CLS[c] || '') + (c === cat ? ' on' : '')
+      + '" data-cat="' + c + '">' + c + '</button>';
+  }).join('');
+}
+function sheetCat(){
+  var cur = el('shCats').querySelector('.cpick.on');
+  return cur ? cur.getAttribute('data-cat') : '';
+}
+function updateSheetDetail(reclassify){
+  var t = el('shName').value.trim();
+  if(reclassify){
+    var d = classifyDetail(t);
+    if(d.cat) renderSheetCats(d.cat);
+  }
+  var cat = sheetCat();
+  var sub = (cat === '家庭生活') ? subOf(t, cat) : '';
+  var s = hmToMin(el('shStart').value), e = hmToMin(el('shEnd').value);
+  var dur = (s != null && e != null && e > s) ? (e - s) : 0;
+  el('shDur').textContent = dur ? fmtMin(dur) : '';
+
+  var msg;
+  if(s != null && e != null && e <= s){
+    msg = '结束时间要晚于开始时间';
+  }else if(!t){
+    msg = '写一句就自动帮你归类';
+  }else if(cat){
+    msg = '自动判断为「<b>' + esc(cat) + (sub ? ' · ' + esc(sub) : '') + '</b>」，不对就点下面的分类改';
+  }else{
+    msg = '没认出是哪一类，点上面选一个';
+  }
+  el('shDetail').innerHTML = msg;
+}
+function openSheet(p){
+  TL.edit = p;
+  el('shTitle').textContent = p.id ? '编辑这一段' : '补记一段';
+  el('shName').value = p.name || '';
+  el('shStart').value = minToHM(p.s);
+  el('shEnd').value = minToHM(p.e);
+  el('shDel').classList.toggle('hidden', !p.id);
+  renderSheetCats(p.cat || '');
+  updateSheetDetail(false);
+  el('blkMask').classList.remove('hidden');
+  el('blkSheet').classList.remove('hidden');
+  setTimeout(function(){ try{ el('shName').focus(); }catch(e){} }, 140);
+}
+function closeSheet(){
+  el('blkMask').classList.add('hidden');
+  el('blkSheet').classList.add('hidden');
+  TL.edit = null;
+}
+
+/* ---------- 落库 ---------- */
+function recalcTotals(title){
+  if(!title) return;
+  var sum = 0, n = 0;
+  state.sessions.forEach(function(x){
+    if((x['任务内容'] || '') === title){ sum += Number(x['时长分钟']) || 0; n++; }
+  });
+  if(!n) return;
+  state.tasks.forEach(function(tk){
+    if(taskTitle(tk) === title) tk['累计用时'] = sum;
+  });
+}
+function persistBlock(p){
+  var day = state.timelineDay;
+  var props = {
+    '任务内容': p.name,
+    '分类': p.cat,
+    '开始时间': wallISO(dateAt(day, p.s)),
+    '结束时间': wallISO(dateAt(day, p.e)),
+    '时长分钟': p.e - p.s,
+    '日期': day
+  };
+
+  if(!db){
+    if(p.id){
+      var hit = findSession(p.id);
+      if(hit) Object.keys(props).forEach(function(k){ hit[k] = props[k]; });
+    }else{
+      props.record_id = 'local_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+      state.sessions.push(props);
+    }
+    cacheSave();
+    recalcTotals(p.name);
+    renderAll();
+    toast(p.id ? '这一段已更新' : '已记上 ' + minToHM(p.s) + '–' + minToHM(p.e));
+    return;
+  }
+
+  setSync('syncing', '同步中');
+  var job = p.id
+    ? db.updateRecord({ databaseId: 'qgG4Bg18jaBhmBHdvjwNHw', recordId: p.id, properties: props })
+    : apiAddSession(props);
+  job.then(function(){
+    toast(p.id ? '这一段已更新' : '已记上');
+    return reloadData();
+  }).catch(function(){
+    toast('没保存成功，检查下网络再试');
+    setSync('offline', '本机模式');
+  });
+}
+function saveSheet(){
+  var name = el('shName').value.trim();
+  var s = hmToMin(el('shStart').value), e = hmToMin(el('shEnd').value);
+  if(!name){ toast('写一句这段时间做了什么'); try{ el('shName').focus(); }catch(err){} return; }
+  if(s == null || e == null){ toast('填一下开始和结束时间'); return; }
+  if(e <= s){ toast('结束时间要晚于开始时间'); return; }
+  var cat = sheetCat() || classify(name) || '家庭生活';
+  var p = { id: TL.edit && TL.edit.id, name: name, cat: cat, s: s, e: e };
+  closeSheet();
+  persistBlock(p);
+}
+function deleteBlock(){
+  if(!TL.edit || !TL.edit.id) return;
+  var p = TL.edit, id = p.id;
+  closeSheet();
+  askConfirm('删除「' + p.name + '」这一段？', function(){
+    if(!db){
+      var i = -1;
+      state.sessions.forEach(function(x, k){ if(String(x.record_id) === String(id)) i = k; });
+      if(i > -1) state.sessions.splice(i, 1);
+      cacheSave();
+      recalcTotals(p.name);
+      renderAll();
+      toast('已删除');
+      return;
+    }
+    setSync('syncing', '同步中');
+    db.deleteRecord({ databaseId: 'qgG4Bg18jaBhmBHdvjwNHw', recordId: id })
+      .then(function(){ toast('已删除'); return reloadData(); })
+      .catch(function(){ toast('删除失败'); });
+  });
+}
+
+/* ---------- 拖拽 ---------- */
+function tlCleanup(){
+  var d = TL.drag;
+  TL.drag = null;
+  if(!d) return null;
+  try{ el('tlCanvas').releasePointerCapture(d.pid); }catch(e){}
+  if(d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+  return d;
+}
+function tlDown(e){
+  if(e.button != null && e.button !== 0) return;
+  var cv = el('tlCanvas');
+  if(!cv) return;
+  var blk = e.target.closest ? e.target.closest('.blk') : null;
+  var rect = cv.getBoundingClientRect();
+  var hr = hourH();
+  var m = tlSnap((e.clientY - rect.top) / hr * 60);
+
+  TL.drag = {
+    mode: blk ? (e.target.getAttribute('data-grip') ? 'resize' : 'move') : 'create',
+    blk: blk, y0: e.clientY, anchor: m, cur: m, pid: e.pointerId, hr: hr,
+    s0: blk ? Number(blk.getAttribute('data-s')) : 0,
+    e0: blk ? Number(blk.getAttribute('data-e')) : 0,
+    ns: null, ne: null, moved: false, ghost: null
+  };
+  try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+
+  if(!blk){
+    var g = document.createElement('div');
+    g.className = 'tl-ghost';
+    g.style.top = (m / 60 * hr) + 'px';
+    g.style.height = '0px';
+    cv.appendChild(g);
+    TL.drag.ghost = g;
+  }
+  if(e.pointerType !== 'touch'){ e.preventDefault(); }
+}
+function tlMove(e){
+  var d = TL.drag;
+  if(!d || e.pointerId !== d.pid) return;
+  var cv = el('tlCanvas');
+  if(!cv) return;
+  var rect = cv.getBoundingClientRect();
+  d.cur = tlSnap((e.clientY - rect.top) / d.hr * 60);
+  if(!d.moved && Math.abs(e.clientY - d.y0) > 4) d.moved = true;
+
+  if(d.mode === 'create' && d.ghost){
+    var a = Math.min(d.anchor, d.cur), b = Math.max(d.anchor, d.cur);
+    if(b - a < 15) b = Math.min(1440, a + 15);
+    d.ghost.style.top = (a / 60 * d.hr) + 'px';
+    d.ghost.style.height = ((b - a) / 60 * d.hr) + 'px';
+    d.ghost.textContent = minToHM(a) + '–' + minToHM(b);
+  }else if(d.mode === 'move' && d.blk){
+    var span = d.e0 - d.s0;
+    var ns = Math.max(0, Math.min(1440 - span, d.s0 + (d.cur - d.anchor)));
+    d.ns = ns; d.ne = ns + span;
+    d.blk.style.top = (ns / 60 * d.hr) + 'px';
+  }else if(d.mode === 'resize' && d.blk){
+    var ne = Math.max(d.s0 + 15, Math.min(1440, d.cur));
+    d.ne = ne;
+    d.blk.style.height = ((ne - d.s0) / 60 * d.hr) + 'px';
+  }
+}
+function tlUp(e){
+  var d = TL.drag;
+  if(!d || e.pointerId !== d.pid) return;
+  var wasMoved = d.moved;
+  var cur = d.cur, anchor = d.anchor;
+  var mode = d.mode, blk = d.blk, s0 = d.s0, e0 = d.e0, ns = d.ns, ne = d.ne;
+  var blkId = blk ? blk.getAttribute('data-id') : null;
+  tlCleanup();
+
+  if(mode === 'create'){
+    var a = Math.min(anchor, cur), b = Math.max(anchor, cur);
+    if(!wasMoved || b - a < 15){
+      a = anchor; b = Math.min(1440, a + 30);
+      if(b - a < 15){ a = 1410; b = 1440; }
+    }
+    openSheet({ id:null, name:'', cat:'', s:a, e:b });
+    return;
+  }
+
+  if(!blk) return;
+  var ss = findSession(blkId);
+
+  if(!wasMoved){
+    if(!ss) return;
+    var sp = sessionSpan(ss);
+    openSheet({
+      id: blkId,
+      name: ss['任务内容'] || '',
+      cat: ss['分类'] || '',
+      s: sp.s, e: sp.e
+    });
+    return;
+  }
+
+  if(mode === 'move'){
+    if(ns == null || ns === s0) return;
+    persistBlock({ id: blkId, name: (ss && ss['任务内容']) || '未命名', cat: (ss && ss['分类']) || '家庭生活', s: ns, e: ne });
+  }else if(mode === 'resize'){
+    if(ne == null || ne === e0) return;
+    persistBlock({ id: blkId, name: (ss && ss['任务内容']) || '未命名', cat: (ss && ss['分类']) || '家庭生活', s: s0, e: ne });
+  }
+}
+function tlCancel(e){
+  var d = TL.drag;
+  if(!d || e.pointerId !== d.pid) return;
+  tlCleanup();
+  renderDayGrid();
+}
+
+/* ---------- 绑定 ---------- */
+function bindTimeline(){
+  var cv = el('tlCanvas');
+  if(!cv) return;
+  cv.addEventListener('pointerdown', tlDown);
+  cv.addEventListener('pointermove', tlMove);
+  cv.addEventListener('pointerup', tlUp);
+  cv.addEventListener('pointercancel', tlCancel);
+
+  el('blkMask').addEventListener('click', closeSheet);
+  el('shClose').addEventListener('click', closeSheet);
+  el('shSave').addEventListener('click', saveSheet);
+  el('shDel').addEventListener('click', deleteBlock);
+  el('shName').addEventListener('input', function(){ updateSheetDetail(true); });
+  el('shCats').addEventListener('click', function(ev){
+    var b = ev.target.closest ? ev.target.closest('.cpick') : null;
+    if(!b) return;
+    el('shCats').querySelectorAll('.cpick').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    updateSheetDetail(false);
+  });
+  ['shStart', 'shEnd'].forEach(function(id){
+    el(id).addEventListener('input', function(){ updateSheetDetail(false); });
+    el(id).addEventListener('change', function(){ updateSheetDetail(false); });
+  });
+  el('tlToday').addEventListener('click', function(){
+    state.timelineDay = todayKey();
+    TL.scrolledFor = null;
+    renderAll();
+  });
+}
+
 function ganttSVG(tasks){
   var days = 10, endK = todayKey(), startK = shiftDay(endK, -(days-1));
   var W = 680, labelW = 166, padR = 8, top = 32, rowH = 30;
@@ -1159,26 +1779,12 @@ function renderStats(){
   el('weekSub').textContent = '合计 ' + fmtMin(wsum);
 }
 function renderTimeline(){
-  var k = state.timelineDay;
-  var list = sessionsOfDay(k);
-  el('timelineBox').innerHTML = timelineSVG(k);
-
-  var html = '';
-  list.forEach(function(ss){
-    var a = timeOf(ss['开始时间']), b = timeOf(ss['结束时间']);
-    var col = CAT_COLOR[ss['分类'] || ''] || '#B7C6D2';
-    html += '<div class="sessrow">'
-      + '<i style="background:'+col+'"></i>'
-      + '<span class="st">'+(a ? pad(a.h)+':'+pad(a.m) : '--:--')+'–'+(b ? pad(b.h)+':'+pad(b.m) : '--:--')+'</span>'
-      + '<span class="sn">'+esc(ss['任务内容'] || '')+'</span>'
-      + '<span class="sd">'+esc(fmtMin(ss['时长分钟']))+'</span>'
-      + '</div>';
-  });
-  el('timelineList').innerHTML = html;
-
-  var t = todayKey();
+  var k = state.timelineDay, t = todayKey();
   el('dayLabel').textContent = (k === t) ? '今天' : (k === shiftDay(t, -1) ? '昨天' : k.slice(5));
-  el('dayNext').style.opacity = (k >= t) ? '0.35' : '1';
+  renderStructure();
+  renderDayGrid();
+  renderTimelineList();
+  autoScrollTimeline();
 }
 function renderGantt(){
   var open = [], done = [];
@@ -1634,13 +2240,17 @@ function bindEvents(){
 
   el('dayPrev').addEventListener('click', function(){
     state.timelineDay = shiftDay(state.timelineDay, -1);
+    TL.scrolledFor = null;
     renderTimeline();
   });
   el('dayNext').addEventListener('click', function(){
     if(state.timelineDay >= todayKey()) return;
     state.timelineDay = shiftDay(state.timelineDay, 1);
+    TL.scrolledFor = null;
     renderTimeline();
   });
+
+  bindTimeline();
 
   el('btnStop').addEventListener('click', function(){ stopTimer(false); });
   el('btnRefresh').addEventListener('click', function(){
