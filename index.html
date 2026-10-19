@@ -461,6 +461,9 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 .pane.active{display:block}
 
 .dock{position:sticky;top:70px;display:flex;flex-direction:column;gap:12px}
+@media (min-width:1024px){
+  .dock{max-height:calc(100vh - 86px);overflow-y:auto;overscroll-behavior:contain;padding-right:2px}
+}
 .dock-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:15px;
   box-shadow:var(--shadow);transition:box-shadow .25s}
 .dock-card h3{margin:0 0 12px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
@@ -480,6 +483,37 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 .dock .sh-acts{margin-top:12px}
 .dock .sh-head{margin:0 0 10px}
 .dock .sh-head b{font-size:14px;font-weight:600}
+/* 右栏：今日待办（可拖到时间轴） */
+.dtodo-list{display:flex;flex-direction:column;gap:6px;max-height:216px;overflow-y:auto}
+.dtodo{
+  display:flex;align-items:center;gap:8px;padding:8px 7px 8px 9px;border-radius:11px;
+  border:1px solid #E9EFF3;background:#FCFDFE;cursor:grab;touch-action:none;
+  font-size:12.5px;color:var(--ink);min-width:0;
+  transition:border-color .14s,box-shadow .14s,background .14s;
+}
+.dtodo:hover{border-color:#D7E6F1;background:#fff;box-shadow:0 1px 4px rgba(46,59,71,.07)}
+.dtodo i{width:6px;height:6px;border-radius:50%;flex:0 0 6px}
+.dtodo .dt-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtodo .dt-time{font-size:10px;color:#C97A70;flex:0 0 auto;background:#FFF3F1;
+  border-radius:6px;padding:1px 5px}
+.dtodo .dt-done{
+  width:22px;height:22px;flex:0 0 22px;border-radius:7px;border:1px solid #E4EDF3;
+  background:#fff;color:#BFCBD4;cursor:pointer;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;transition:.15s;
+}
+.dtodo .dt-done:hover{border-color:#9FD3BF;color:#3E9585;background:#F3FBF8}
+.dtodo.dtdragging{opacity:.4;border-style:dashed;background:#F7FBFD}
+.dtodo-empty{font-size:12px;color:var(--ink3);text-align:center;padding:14px 0}
+.dt-float{
+  position:fixed;z-index:95;pointer-events:none;transform:translate(-50%,-135%);
+  padding:6px 11px;border-radius:10px;background:rgba(46,59,71,.92);color:#fff;
+  font-size:12px;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:0 8px 24px rgba(46,59,71,.26);
+}
+body.dt-dragging{cursor:grabbing}
+body.dt-dragging .dtodo{cursor:grabbing}
+.tl-ghost.dt-land{border-color:#86AEDB;background:rgba(230,241,251,.96);color:#3F6E9C}
+
 /* 右栏：补记快捷 */
 .log-quick{display:flex;flex-wrap:wrap;gap:6px}
 .log-quick .lq{
@@ -614,6 +648,9 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 
   /* 手机上 6 个页签要挤得下 */
   .rail button{font-size:10.5px;line-height:1.15;white-space:normal}
+  /* 手机抽屉会挡住时间轴，拖动待办只在桌面生效 */
+  #cardTodo .dock-hint{display:none}
+  .dtodo{cursor:default}
 
   .wk-wrap{--wh:18px;max-height:none}
   .wk-hd{padding:5px 1px 4px}
@@ -886,6 +923,12 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
         </button>
       </div>
       <p class="qa-tip" id="qaTip">按关键词自动分到「教学 / 科研 / 行政 / 家庭生活」，分错了点标签改一下。</p>
+    </div>
+
+    <div class="dock-card" id="cardTodo">
+      <h3><i></i>今日待办<span id="dtodoCnt"></span></h3>
+      <div class="dtodo-list" id="dtodoList"></div>
+      <p class="dock-hint">做完的那条<b>按住右边拖进时间轴</b>，松手就记成一段时间，任务同时标记完成。</p>
     </div>
 
     <div class="dock-card" id="cardLog">
@@ -1463,6 +1506,32 @@ function renderToday(){
   el('dsTodo').textContent = b.todos.length;
   el('dsDone').textContent = b.doneToday.length;
   el('dsMin').textContent = tmin;
+}
+
+/* 右栏「今日待办」：可以按住直接拖进时间轴 */
+function renderDockTodo(){
+  var host = el('dtodoList');
+  if(!host) return;
+  var b = bucketToday();
+  var list = b.overdue.concat(b.todos);
+  el('dtodoCnt').textContent = list.length ? (list.length + ' 项') : '';
+  if(!list.length){
+    host.innerHTML = '<div class="dtodo-empty">今天没有待办，上面写一句就会出现在这里</div>';
+    return;
+  }
+  host.innerHTML = list.map(function(tk){
+    var c = tk['分类'] || '';
+    var late = b.overdue.indexOf(tk) !== -1;
+    return '<div class="dtodo" data-id="' + esc(String(tk.record_id)) + '"'
+      + ' title="' + esc(taskTitle(tk) + ' · 按住可以拖进时间轴') + '">'
+      + '<i style="background:' + (CAT_COLOR[c] || '#B7C6D2') + '"></i>'
+      + '<span class="dt-name">' + esc(taskTitle(tk)) + '</span>'
+      + (late ? '<span class="dt-time">逾期</span>' : '')
+      + '<button class="dt-done" data-act="done" title="标记完成" aria-label="标记完成">'
+      + '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"'
+      + ' stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'
+      + '</button></div>';
+  }).join('');
 }
 
 function renderAllList(){
@@ -2254,6 +2323,110 @@ function tlCancel(e){
   renderDayGrid();
 }
 
+/* ---------- 右栏待办：拖进时间轴 = 记一段 + 标记完成 ---------- */
+var DT = { drag: null };
+
+function dtClick(e){
+  var btn = e.target.closest ? e.target.closest('.dt-done') : null;
+  if(!btn) return;
+  var row = btn.closest('.dtodo');
+  var tk = row ? findTask(row.getAttribute('data-id')) : null;
+  if(!tk) return;
+  setStatus(tk, true);
+  toast('做好了 · ' + taskTitle(tk));
+}
+function dtDown(e){
+  if(e.button != null && e.button !== 0) return;
+  var row = e.target.closest ? e.target.closest('.dtodo') : null;
+  if(!row) return;
+  if(e.target.closest('.dt-done')) return;
+  /* 手机上抽屉会盖住时间轴，拖动只在桌面生效 */
+  if(!window.matchMedia('(min-width:1024px)').matches) return;
+  DT.drag = {
+    row: row, id: row.getAttribute('data-id'), pid: e.pointerId,
+    x0: e.clientX, y0: e.clientY, moved: false, ghost: null, mark: null, land: null
+  };
+  try{ row.setPointerCapture(e.pointerId); }catch(err){}
+  if(e.pointerType !== 'touch') e.preventDefault();
+}
+function dtClearMark(d){
+  if(d.mark && d.mark.parentNode) d.mark.parentNode.removeChild(d.mark);
+  d.mark = null;
+  d.land = null;
+}
+function dtTrack(x, y){
+  var d = DT.drag;
+  if(!d) return;
+  var cv = el('tlCanvas');
+  if(!cv) return;
+  var r = cv.getBoundingClientRect();
+  if(x < r.left || x > r.right || y < r.top - 2 || y > r.bottom + 2){ dtClearMark(d); return; }
+  var hr = hourH();
+  /* 落点 = 这一段的结束时刻，默认往前推半小时 */
+  var end = tlSnap((y - r.top) / hr * 60);
+  var start = Math.max(0, end - 30);
+  if(end - start < 15) start = Math.max(0, end - 15);
+  d.land = { s: start, e: end };
+  if(!d.mark){
+    var g = document.createElement('div');
+    g.className = 'tl-ghost dt-land';
+    cv.appendChild(g);
+    d.mark = g;
+  }
+  d.mark.style.top = (start / 60 * hr) + 'px';
+  d.mark.style.height = Math.max(8, (end - start) / 60 * hr) + 'px';
+  d.mark.textContent = minToHM(start) + '–' + minToHM(end);
+}
+function dtMove(e){
+  var d = DT.drag;
+  if(!d || e.pointerId !== d.pid) return;
+  if(!d.moved && (Math.abs(e.clientX - d.x0) > 6 || Math.abs(e.clientY - d.y0) > 6)){
+    d.moved = true;
+    document.body.classList.add('dt-dragging');
+    d.row.classList.add('dtdragging');
+    if(!el('secTimeline').classList.contains('active')){
+      TL.scrolledFor = state.timelineDay;   /* 拖拽途中别自动滚到别的地方 */
+      switchPane('secTimeline', true);
+    }
+    var f = document.createElement('div');
+    f.className = 'dt-float';
+    var nm = d.row.querySelector('.dt-name');
+    f.textContent = nm ? nm.textContent : '';
+    document.body.appendChild(f);
+    d.ghost = f;
+  }
+  if(!d.moved) return;
+  d.ghost.style.left = e.clientX + 'px';
+  d.ghost.style.top = e.clientY + 'px';
+  dtTrack(e.clientX, e.clientY);
+}
+function dtUp(e){
+  var d = DT.drag;
+  if(!d || e.pointerId !== d.pid) return;
+  DT.drag = null;
+  document.body.classList.remove('dt-dragging');
+  if(d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+  if(d.mark && d.mark.parentNode) d.mark.parentNode.removeChild(d.mark);
+  if(d.row) d.row.classList.remove('dtdragging');
+  if(!d.moved) return;
+  if(!d.land){ toast('要松在时间轴上才算'); return; }
+  var tk = findTask(d.id);
+  if(!tk) return;
+  var land = d.land;
+  persistBlock({ id: null, name: taskTitle(tk), cat: tk['分类'] || '教学', s: land.s, e: land.e });
+  if(!isDone(tk)) setStatus(tk, true);
+  toast('已记上 ' + minToHM(land.s) + '–' + minToHM(land.e) + '，任务也标记完成了');
+}
+function dtCancel(e){
+  var d = DT.drag;
+  if(!d || e.pointerId !== d.pid) return;
+  DT.drag = null;
+  document.body.classList.remove('dt-dragging');
+  if(d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+  if(d.mark && d.mark.parentNode) d.mark.parentNode.removeChild(d.mark);
+  if(d.row) d.row.classList.remove('dtdragging');
+}
+
 /* ---------- 绑定 ---------- */
 function bindTimeline(){
   var cv = el('tlCanvas');
@@ -2586,6 +2759,7 @@ function renderAll(){
   renderSync();
   renderQuickCat();
   renderToday();
+  renderDockTodo();
   renderAllList();
   renderStats();
   renderTimeline();
@@ -3123,6 +3297,13 @@ function bindEvents(){
     var n = ev.target.closest ? ev.target.closest('.mc') : null;
     if(n) gotoDay(n.getAttribute('data-day'));
   });
+
+  /* 右栏今日待办：点勾完成 / 按住拖进时间轴 */
+  el('dtodoList').addEventListener('click', dtClick);
+  el('dtodoList').addEventListener('pointerdown', dtDown);
+  el('dtodoList').addEventListener('pointermove', dtMove);
+  el('dtodoList').addEventListener('pointerup', dtUp);
+  el('dtodoList').addEventListener('pointercancel', dtCancel);
   var rzT = null;
   window.addEventListener('resize', function(){
     if(rzT) clearTimeout(rzT);
