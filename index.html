@@ -70,18 +70,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .icobtn:hover{color:var(--primary);box-shadow:var(--shadow);transform:translateY(-1px)}
 .icobtn:active{transform:scale(.96)}
 
-/* ---------- 分段导航 ---------- */
-.segnav{
-  display:flex;gap:6px;padding:4px;margin:12px 0 14px;
-  background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
-}
-.seg{
-  flex:1;height:38px;border:0;background:transparent;border-radius:10px;
-  font-size:14px;color:var(--ink2);cursor:pointer;transition:.18s;font-weight:500;
-}
-.seg.active{background:linear-gradient(135deg,#EAF3FB,#F4F9FD);color:#4E7CA8;box-shadow:inset 0 0 0 1px #E1EDF7;font-weight:600}
-
-/* ---------- 卡片 ---------- */
+/* ---------- 卡片（旧的顶部导航样式已由左栏 .rail 取代） ---------- */
 .sec{
   background:var(--card);border:1px solid var(--line);border-radius:var(--r);
   padding:16px;box-shadow:var(--shadow);margin-bottom:14px;
@@ -104,11 +93,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .dot-blue{background:#86AEDB}
 .dot-green{background:#7FC5B4}
 
-/* ---------- 快速录入 ---------- */
-.quickadd{
-  background:linear-gradient(150deg,#F7FBFE,#FBFDF8);
-  border:1px solid #ECF3F7;border-radius:15px;padding:12px;margin-bottom:6px;
-}
+/* ---------- 快速录入（右栏） ---------- */
 .qa-row{display:flex;gap:8px;align-items:center}
 #qaInput{
   flex:1;min-width:0;height:46px;padding:0 14px;border-radius:12px;
@@ -315,7 +300,6 @@ input,select,textarea{font-family:inherit;font-size:16px}
   .task{padding:10px;gap:8px}
   .tk-acts{gap:5px}
   .tbtn{padding:0 9px;font-size:12px}
-  .segnav{margin:10px 0 12px}
   .tb-name{font-size:13px}
 }
 @media (max-width:520px){
@@ -425,6 +409,102 @@ input,select,textarea{font-family:inherit;font-size:16px}
   .micbtn{flex:1 1 100%;width:auto;height:44px}
 }
 @media print{body{background:#fff}}
+/* ================= 左中右三栏 ================= */
+.wrap{max-width:1400px}
+.layout{display:grid;grid-template-columns:200px minmax(0,1fr) 340px;gap:14px;align-items:start}
+
+.rail{position:sticky;top:70px;display:flex;flex-direction:column;gap:3px;
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:7px;box-shadow:var(--shadow)}
+.rail button{display:flex;align-items:center;gap:9px;width:100%;min-height:44px;border:0;background:transparent;
+  border-radius:11px;padding:0 11px;font-size:14px;color:var(--ink2);cursor:pointer;text-align:left;
+  font-weight:500;transition:background .15s,color .15s}
+.rail button:hover{background:#F6FAFC;color:var(--ink)}
+.rail button.active{background:linear-gradient(135deg,#EAF3FB,#F4F9FD);color:#4E7CA8;
+  box-shadow:inset 0 0 0 1px #E1EDF7;font-weight:600}
+.rail button svg{flex:0 0 18px;width:18px;height:18px;opacity:.9}
+
+.stage{min-width:0}
+.pane{display:none}
+.pane.active{display:block}
+
+.dock{position:sticky;top:70px;display:flex;flex-direction:column;gap:12px}
+.dock-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:15px;
+  box-shadow:var(--shadow);transition:box-shadow .25s}
+.dock-card h3{margin:0 0 12px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+.dock-card h3 i{width:6px;height:6px;border-radius:50%;background:var(--primary);flex:0 0 6px}
+.dock-card h3 span{font-weight:400;font-size:11.5px;color:var(--ink3);margin-left:auto}
+.dock-card.flash{box-shadow:0 0 0 2px rgba(134,174,219,.5),0 10px 28px rgba(46,59,71,.12)}
+.dock .qa-row{width:100%}
+.dock .qa-row2{display:flex;flex-direction:column;gap:9px;margin-top:10px;width:100%}
+.dock #catPick{display:flex;flex-wrap:wrap;gap:6px}
+.dock .btn.primary{width:100%;height:42px}
+.dock .qa-tip{margin:9px 0 0;font-size:11.5px;color:var(--ink3);line-height:1.6}
+.dock-hint{margin:11px 0 0;font-size:11.5px;color:var(--ink3);line-height:1.6}
+.dock .sh-time{flex-direction:column;align-items:stretch;gap:9px;margin:13px 0 0}
+.dock .sh-time label{justify-content:space-between;width:100%}
+.dock .sh-time input{width:118px}
+.dock .sh-dur{text-align:right;margin:9px 0 0}
+.dock .sh-acts{margin-top:12px}
+.dock .sh-head{margin:0 0 10px}
+.dock .sh-head b{font-size:14px;font-weight:600}
+/* 右栏：补记快捷 */
+.log-quick{display:flex;flex-wrap:wrap;gap:6px}
+.log-quick .lq{
+  flex:1 1 calc(50% - 3px);min-width:0;height:36px;border-radius:10px;cursor:pointer;
+  border:1px solid #DFECF5;background:#F8FCFE;color:#5E8CB6;font-size:12.5px;font-weight:500;
+  transition:.16s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px;
+}
+.log-quick .lq:hover{background:#EFF8FD;border-color:#C9E0F0;box-shadow:var(--shadow)}
+.log-quick .lq:last-child{flex:1 1 100%;color:var(--ink2);border-color:#E8EEF2;background:#fff}
+/* 右栏：今日小结 */
+.mini-sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
+.mini-sum div{background:linear-gradient(160deg,#F8FBFD,#FBFDFE);border:1px solid #EDF3F7;
+  border-radius:11px;padding:9px 4px}
+.mini-sum b{display:block;font-size:19px;font-weight:700;line-height:1.2;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.mini-sum span{display:block;margin-top:3px;font-size:11px;color:var(--ink3)}
+.dock-grip{display:none}
+.fab{display:none}
+.dockmask{display:none}
+
+@media (max-width:1199px){
+  .layout{grid-template-columns:168px minmax(0,1fr) 288px;gap:11px}
+  .rail button{font-size:13px;padding:0 9px;gap:7px}
+  .dock-card{padding:13px}
+}
+
+@media (max-width:1023px){
+  .layout{display:block}
+  .rail{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:41;flex-direction:row;gap:2px;
+    border-radius:0;border:0;border-top:1px solid var(--line);
+    padding:6px 4px calc(5px + env(safe-area-inset-bottom));
+    background:rgba(253,255,255,.96);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    box-shadow:0 -2px 14px rgba(46,59,71,.06)}
+  .rail button{flex:1;flex-direction:column;justify-content:center;gap:3px;min-height:0;height:auto;
+    padding:5px 1px;font-size:11px;border-radius:9px;text-align:center}
+  .rail button svg{width:19px;height:19px;flex:0 0 19px}
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+
+  .dock{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:58;max-height:84vh;overflow-y:auto;
+    padding:16px 14px calc(20px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;
+    background:#FBFDFE;box-shadow:0 -12px 44px rgba(46,59,71,.22);
+    transform:translateY(106%);transition:transform .26s ease;display:block}
+  .dock.open{transform:translateY(0)}
+  .dock-grip{display:block;width:38px;height:4px;border-radius:2px;background:#D9E4EC;
+    margin:-6px auto 12px}
+  .dock .dock-card{background:transparent;border:0;box-shadow:none;padding:0 0 15px}
+  .dock .dock-card + .dock-card{border-top:1px solid var(--line);padding-top:15px}
+  .dock .dock-card.flash{box-shadow:none}
+  .dockmask{display:block;position:fixed;inset:0;background:rgba(46,59,71,.24);z-index:55;
+    opacity:0;pointer-events:none;transition:opacity .24s}
+  .dockmask.on{opacity:1;pointer-events:auto}
+  .fab{display:flex;position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:45;
+    width:54px;height:54px;border-radius:50%;border:0;align-items:center;justify-content:center;
+    background:linear-gradient(140deg,#9CC2E6,#86AEDB);color:#fff;
+    box-shadow:0 8px 22px rgba(134,174,219,.5);cursor:pointer}
+  .fab:active{transform:scale(.94)}
+  .fab.hidden{display:none !important}
+}
 </style>
 </head>
 <body>
@@ -455,37 +535,34 @@ input,select,textarea{font-family:inherit;font-size:16px}
     </div>
   </header>
 
-  <nav class="segnav" id="segnav">
-    <button class="seg active" data-target="secToday">今天要处理</button>
-    <button class="seg" data-target="secTimeline">时间轴</button>
-    <button class="seg" data-target="secList">全部任务</button>
-    <button class="seg" data-target="secStats">统计</button>
+  <div class="layout">
+
+  <nav class="rail" id="segnav">
+    <button class="active" data-target="secToday">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+      今天要处理
+    </button>
+    <button data-target="secTimeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>
+      时间轴
+    </button>
+    <button data-target="secList">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      全部任务
+    </button>
+    <button data-target="secStats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19v-7M12 19V5M19 19v-9"/><path d="M3 21h18"/></svg>
+      统计
+    </button>
   </nav>
 
-  <!-- ============ 模块 1：今天要处理 + 快速录入 ============ -->
-  <section class="sec" id="secToday">
+  <main class="stage">
+
+  <!-- ============ 模块 1：今天要处理 ============ -->
+  <section class="sec pane active" id="secToday">
     <div class="sec-head">
       <h2>今天要处理</h2>
       <span class="sec-hint" id="todayHint"></span>
-    </div>
-
-    <div class="quickadd">
-      <div class="qa-row">
-        <input id="qaInput" type="text" placeholder="写一句或按住麦克风口述，例如：批改实验报告" autocomplete="off" maxlength="200">
-        <button id="btnVoice" class="micbtn" title="语音输入" aria-label="语音输入">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/><path d="M8.5 21h7"/>
-          </svg>
-        </button>
-      </div>
-      <div class="qa-row2">
-        <div class="catpick" id="catPick"></div>
-        <button id="btnAdd" class="btn primary">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          添加
-        </button>
-      </div>
-      <p class="qa-tip" id="qaTip">我会按关键词自动分到「教学 / 科研 / 行政 / 家庭生活」，分错了点上面标签改一下就行。</p>
     </div>
 
     <div id="overdueBlock" class="block hidden">
@@ -508,7 +585,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
   </section>
 
   <!-- ============ 模块 2：时间轴（拖拽补记） ============ -->
-  <section class="sec" id="secTimeline">
+  <section class="sec pane" id="secTimeline">
     <div class="sec-head">
       <h2>时间轴</h2>
       <span class="sec-hint">在空白处按住往下拖，补记一段</span>
@@ -543,7 +620,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
   </section>
 
   <!-- ============ 模块 3：全部任务 ============ -->
-  <section class="sec" id="secList">
+  <section class="sec pane" id="secList">
     <div class="sec-head">
       <h2>全部任务</h2>
       <span class="sec-hint">点「开始」计时，结束不等于完成，时间会累计</span>
@@ -569,7 +646,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
   </section>
 
   <!-- ============ 模块 3：统计 ============ -->
-  <section class="sec" id="secStats">
+  <section class="sec pane" id="secStats">
     <div class="sec-head"><h2>统计</h2><span class="sec-hint">数据来自在线表，多设备实时同步</span></div>
 
     <div class="kpis">
@@ -603,7 +680,59 @@ input,select,textarea{font-family:inherit;font-size:16px}
     <div class="gantt-note" id="ganttNote"></div>
   </section>
 
-</div>
+  </main>
+
+  <!-- ============ 右栏：添加 ============ -->
+  <aside class="dock" id="dock">
+    <div class="dock-grip" id="dockGrip" aria-hidden="true"></div>
+    <div class="dock-card" id="cardAdd">
+      <h3><i></i>添加待办<span>自动分类</span></h3>
+      <div class="qa-row">
+        <input id="qaInput" type="text" placeholder="写一句，或按住麦克风口述" autocomplete="off" maxlength="200">
+        <button id="btnVoice" class="micbtn" title="语音输入" aria-label="语音输入">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/><path d="M8.5 21h7"/>
+          </svg>
+        </button>
+      </div>
+      <div class="qa-row2">
+        <div class="catpick" id="catPick"></div>
+        <button id="btnAdd" class="btn primary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          添加
+        </button>
+      </div>
+      <p class="qa-tip" id="qaTip">按关键词自动分到「教学 / 科研 / 行政 / 家庭生活」，分错了点标签改一下。</p>
+    </div>
+
+    <div class="dock-card" id="cardLog">
+      <h3><i></i>补记已经做过的<span>不新建任务</span></h3>
+      <div class="log-quick">
+        <button class="lq" data-quick="30">刚才 30 分钟</button>
+        <button class="lq" data-quick="60">刚才 1 小时</button>
+        <button class="lq" data-quick="0">自己挑时间</button>
+      </div>
+      <p class="dock-hint">写在时间轴上就是一条计时记录，统计和时间轴会一起更新。</p>
+    </div>
+
+    <div class="dock-card" id="cardToday">
+      <h3><i></i>今日小结</h3>
+      <div class="mini-sum">
+        <div><b id="dsTodo">0</b><span>待办</span></div>
+        <div><b id="dsDone">0</b><span>完成</span></div>
+        <div><b id="dsMin">0</b><span>专注分钟</span></div>
+      </div>
+    </div>
+  </aside>
+
+  </div><!-- /layout -->
+
+  </div><!-- /wrap -->
+
+<button class="fab" id="fabAdd" aria-label="添加待办">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+<div class="dockmask" id="dockMask"></div>
 
 <!-- 计时浮条 -->
 <div id="timerBar" class="timerbar hidden">
@@ -664,6 +793,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
   <div class="dgroup">
     <h4>说明</h4>
     <div class="dnote">
+      · 左边是功能页签，中间看内容，<b>右边录入</b>——加待办、补记已经做过的都在右边一次写完。<br>
       · 「今天要处理」置顶显示逾期与今日待办，昨天没做完的会自动顺延到今天，并标「顺延 N 天」。<br>
       · 计时：点「开始」开始计时，点「结束计时」把这一段的时长累加到任务上；<b>结束不等于完成</b>，下次可以接着计时。<br>
       · 勾选圆圈才算完成，会自动记录完成日期。<br>
@@ -687,7 +817,7 @@ var CAT_CLS = { '教学':'c-teach', '科研':'c-res', '行政':'c-adm', '家庭�
 var CAT_COLOR = { '教学':'#7FA8DC', '科研':'#A79BE0', '行政':'#6FC0B0', '家庭生活':'#F0A79E' };
 var SAMPLE_TITLES = ['批改《数字电路》实验报告','准备《数字逻辑》第3-4节课件','修改论文第二稿讨论部分','填写学院年度考核表','晚饭后陪孩子读绘本'];
 
-var K_DRAFT='wb_lifehub_draft', K_RUN='wb_lifehub_running', K_CACHE='wb_lifehub_cache', K_CAT='wb_lifehub_lastcat';
+var K_DRAFT='wb_lifehub_draft', K_RUN='wb_lifehub_running', K_CACHE='wb_lifehub_cache', K_CAT='wb_lifehub_lastcat', K_PANE='wb_lifehub_pane';
 
 /* ================= 1. 基础工具 ================= */
 function el(id){ return document.getElementById(id); }
@@ -1124,6 +1254,10 @@ function renderToday(){
   var tmin = minutesOfSessions(sessionsOfDay(todayKey()));
   if(tmin > 0) hint.push('今天已专注 ' + fmtMin(tmin));
   el('todayHint').textContent = hint.join(' · ');
+
+  el('dsTodo').textContent = b.todos.length;
+  el('dsDone').textContent = b.doneToday.length;
+  el('dsMin').textContent = tmin;
 }
 
 function renderAllList(){
@@ -1408,6 +1542,8 @@ function autoScrollTimeline(){
   var wrap = el('tlWrap');
   if(!wrap) return;
   if(TL.scrolledFor === state.timelineDay) return;
+  /* 分栏隐藏时不做滚动（滚动位置在隐藏元素上无效），等切到这一栏再滚 */
+  if(!wrap.offsetParent && !wrap.getClientRects().length) return;
   TL.scrolledFor = state.timelineDay;
   var hr = hourH();
   var list = sessionsOfDay(state.timelineDay);
@@ -1905,7 +2041,7 @@ function applyClassify(text){
   else tip.textContent = '没看出明显关键词，先按「' + (state.draftCat || '教学') + '」归类，你可以在上面点一下改。';
 }
 function resetTip(){
-  el('qaTip').textContent = '我会按关键词自动分到「教学 / 科研 / 行政 / 家庭生活」，分错了点上面标签改一下就行。';
+  el('qaTip').textContent = '按关键词自动分到「教学 / 科研 / 行政 / 家庭生活」，分错了点标签改一下。';
 }
 function saveDraft(){
   writeLS(K_DRAFT, JSON.stringify({ t: el('qaInput').value, c: state.draftCat, ts: Date.now() }));
@@ -1941,11 +2077,13 @@ function doAdd(){
     });
     cacheSave(); renderAll();
     toast('已加入「' + cat + '」（本机模式）');
+    if(window.innerWidth < 1024) closeDock();
     return;
   }
   setSync('syncing', '同步中');
   apiAddTask(props).then(function(){
     toast('已加入「' + cat + '」');
+    if(window.innerWidth < 1024) closeDock();
     return reloadData();
   }).catch(function(err){
     console.error('[workspace] 添加失败:', err);
@@ -2183,13 +2321,66 @@ function onListClick(ev, withDel){
   else if(act === 'timer') startTimer(tk);
   else if(act === 'del' && withDel) delTask(tk);
 }
+/* ---------- 左栏页签切换 ---------- */
+function switchPane(id, noScroll){
+  var btns = document.querySelectorAll('#segnav button');
+  var found = false;
+  for(var i = 0; i < btns.length; i++){
+    var on = btns[i].getAttribute('data-target') === id;
+    btns[i].classList.toggle('active', on);
+    if(on) found = true;
+  }
+  if(!found) return;
+  var panes = document.querySelectorAll('.pane');
+  for(var j = 0; j < panes.length; j++){
+    panes[j].classList.toggle('active', panes[j].id === id);
+  }
+  writeLS(K_PANE, id);
+  if(id === 'secTimeline'){
+    TL.scrolledFor = null;
+    renderTimeline();
+  }
+  if(!noScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ---------- 右栏（手机上是底部抽屉） ---------- */
+function openDock(){
+  var d = el('dock'); if(!d) return;
+  d.classList.add('open');
+  el('dockMask').classList.add('on');
+  var f = el('fabAdd'); if(f) f.classList.add('hidden');
+  setTimeout(function(){ try{ el('qaInput').focus(); }catch(e){} }, 300);
+}
+function closeDock(){
+  var d = el('dock'); if(!d) return;
+  d.classList.remove('open');
+  el('dockMask').classList.remove('on');
+  var f = el('fabAdd'); if(f) f.classList.remove('hidden');
+}
+
 function bindEvents(){
-  document.querySelectorAll('#segnav .seg').forEach(function(b){
-    b.addEventListener('click', function(){
-      document.querySelectorAll('#segnav .seg').forEach(function(x){ x.classList.remove('active'); });
-      b.classList.add('active');
-      var target = el(b.getAttribute('data-target'));
-      if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('#segnav button').forEach(function(b){
+    b.addEventListener('click', function(){ switchPane(b.getAttribute('data-target')); });
+  });
+
+  el('fabAdd').addEventListener('click', openDock);
+  el('dockMask').addEventListener('click', closeDock);
+  el('dockGrip').addEventListener('click', closeDock);
+
+  /* 右栏补记快捷入口 */
+  document.querySelectorAll('#cardLog .lq').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var mins = Number(btn.getAttribute('data-quick')) || 0;
+      var now = new Date();
+      var endM = tlSnap(now.getHours() * 60 + now.getMinutes());
+      var startM = mins ? tlSnap(endM - mins) : Math.max(0, endM - 30);
+      if(endM <= startM) endM = Math.min(1440, startM + 30);
+      state.timelineDay = todayKey();
+      TL.scrolledFor = null;
+      renderTimeline();
+      switchPane('secTimeline');
+      if(window.innerWidth < 1024) closeDock();
+      openSheet({ id: null, name: '', cat: '', s: startM, e: endM });
     });
   });
 
@@ -2301,6 +2492,12 @@ function init(){
   renderQuickCat();
   bindEvents();
   setInterval(tickTimer, 1000);
+
+  /* 回到上次停留的页签（时间轴 / 全部任务 / 统计），没有就停在今天 */
+  var lastPane = readLS(K_PANE);
+  if(lastPane && lastPane !== 'secToday' && el(lastPane)){
+    try{ switchPane(lastPane, true); }catch(e){ console.warn('[workspace] 恢复页签失败', e); }
+  }
 
   var saved = readLSJSON(K_RUN, null);
   if(saved && saved.recordId && saved.startedAt) state.running = saved;
