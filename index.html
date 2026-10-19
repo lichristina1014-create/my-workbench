@@ -11,10 +11,11 @@
   --card:#FFFFFF;
   --ink:#2E3B47; --ink2:#6A7A88; --ink3:#9FAEB9;
   --line:#E9EFF3; --line2:#F3F7F9;
-  --teach:#7FA8DC; --teachBg:#EEF4FC;
-  --res:#A79BE0;   --resBg:#F3F0FC;
-  --adm:#6FC0B0;   --admBg:#EBF7F4;
-  --fam:#F0A79E;   --famBg:#FDF0EE;
+  /* 四类主色：教学=紫 / 科研=红 / 行政=蓝 / 家庭生活=绿 */
+  --teach:#A79BE0; --teachBg:#F3F0FC;
+  --res:#E18B84;   --resBg:#FCEEEC;
+  --adm:#7FA8DC;   --admBg:#EEF4FC;
+  --fam:#7FC4A4;   --famBg:#ECF7F1;
   --primary:#86AEDB; --primary2:#9CC2E6;
   --danger:#E2796F; --dangerBg:#FDF657; --warnBg:#FDEDEB;
   --ok:#63B8A6;
@@ -114,10 +115,10 @@ input,select,textarea{font-family:inherit;font-size:16px}
   border:1px solid var(--line);background:#fff;color:var(--ink2);transition:.16s;
 }
 .cpick.on{font-weight:600}
-.cpick.on.c-teach{background:var(--teachBg);color:#4E7CA8;border-color:#CFE2F4}
-.cpick.on.c-res{background:var(--resBg);color:#6F63B8;border-color:#DCD5F7}
-.cpick.on.c-adm{background:var(--admBg);color:#3E9585;border-color:#C8EBE4}
-.cpick.on.c-fam{background:var(--famBg);color:#C97A70;border-color:#F5D8D3}
+.cpick.on.c-teach{background:var(--teachBg);color:#6F63B8;border-color:#DCD5F7}
+.cpick.on.c-res{background:var(--resBg);color:#C4665C;border-color:#F5D8D3}
+.cpick.on.c-adm{background:var(--admBg);color:#4E7CA8;border-color:#CFE2F4}
+.cpick.on.c-fam{background:var(--famBg);color:#3E9585;border-color:#C9E9DC}
 .btn{
   min-height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line);
   background:#fff;color:var(--ink);font-size:15px;cursor:pointer;
@@ -155,10 +156,10 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .task.done .tk-title{color:var(--ink3);text-decoration:line-through;text-decoration-color:#CBD6DE}
 .tk-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;font-size:12px;color:var(--ink3)}
 .chip{padding:1px 8px;border-radius:20px;font-size:11.5px;line-height:18px}
-.chip.c-teach{background:var(--teachBg);color:#4E7CA8}
-.chip.c-res{background:var(--resBg);color:#6F63B8}
-.chip.c-adm{background:var(--admBg);color:#3E9585}
-.chip.c-fam{background:var(--famBg);color:#C97A70}
+.chip.c-teach{background:var(--teachBg);color:#6F63B8}
+.chip.c-res{background:var(--resBg);color:#C4665C}
+.chip.c-adm{background:var(--admBg);color:#4E7CA8}
+.chip.c-fam{background:var(--famBg);color:#3E9585}
 .tag{padding:1px 7px;border-radius:6px;font-size:11px;line-height:17px;background:#FBF3E6;color:#B98B3E;border:1px solid #F3E5CC}
 .tag.red{background:#FDEBE9;color:#C4695F;border-color:#F5D5D0}
 .tk-acts{display:flex;align-items:center;gap:6px;flex:0 0 auto}
@@ -185,10 +186,10 @@ input,select,textarea{font-family:inherit;font-size:16px}
   background:#fff;font-size:13px;color:var(--ink2);cursor:pointer;transition:.16s;
 }
 .fb.on{background:#EFF5FA;border-color:#D8E7F3;color:#4E7CA8;font-weight:600}
-.fb.f-teach.on{background:var(--teachBg);border-color:#CFE2F4;color:#4E7CA8}
-.fb.f-res.on{background:var(--resBg);border-color:#DCD5F7;color:#6F63B8}
-.fb.f-adm.on{background:var(--admBg);border-color:#C8EBE4;color:#3E9585}
-.fb.f-fam.on{background:var(--famBg);border-color:#F5D8D3;color:#C97A70}
+.fb.f-teach.on{background:var(--teachBg);border-color:#DCD5F7;color:#6F63B8}
+.fb.f-res.on{background:var(--resBg);border-color:#F5D8D3;color:#C4665C}
+.fb.f-adm.on{background:var(--admBg);border-color:#CFE2F4;color:#4E7CA8}
+.fb.f-fam.on{background:var(--famBg);border-color:#C9E9DC;color:#3E9585}
 .fsp{flex:1}
 .fsel{height:32px;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--ink2);padding:0 8px;font-size:13px}
 
@@ -201,9 +202,10 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .kpi .k-num{font-size:23px;font-weight:700;line-height:1.2;letter-spacing:-.5px}
 .kpi .k-num small{font-size:12px;font-weight:500;color:var(--ink3);margin-left:1px}
 .kpi .k-lab{font-size:12px;color:var(--ink3);margin-top:3px}
-.kpi.k-teach .k-num{color:#5E8FC4}
-.kpi.k-res .k-num{color:#8478CC}
+/* KPI 数字色只是配色（待办=紫 / 已完成=绿 / 专注=蓝 / 本周=珊瑚），不代表分类 */
+.kpi.k-teach .k-num{color:#8478CC}
 .kpi.k-adm .k-num{color:#4CA594}
+.kpi.k-res .k-num{color:#5E8FC4}
 .kpi.k-fam .k-num{color:#D98A80}
 .chart-title{font-size:13px;font-weight:600;color:var(--ink2);margin:16px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .chart-title:first-of-type{margin-top:2px}
@@ -814,7 +816,7 @@ var DATABASE_ID = 'trduTOw4kH4o9eBlU6cISI';      /* 任务清单 */
 
 var CATS = ['教学','科研','行政','家庭生活'];
 var CAT_CLS = { '教学':'c-teach', '科研':'c-res', '行政':'c-adm', '家庭生活':'c-fam' };
-var CAT_COLOR = { '教学':'#7FA8DC', '科研':'#A79BE0', '行政':'#6FC0B0', '家庭生活':'#F0A79E' };
+var CAT_COLOR = { '教学':'#A79BE0', '科研':'#E18B84', '行政':'#7FA8DC', '家庭生活':'#7FC4A4' };
 var SAMPLE_TITLES = ['批改《数字电路》实验报告','准备《数字逻辑》第3-4节课件','修改论文第二稿讨论部分','填写学院年度考核表','晚饭后陪孩子读绘本'];
 
 var K_DRAFT='wb_lifehub_draft', K_RUN='wb_lifehub_running', K_CACHE='wb_lifehub_cache', K_CAT='wb_lifehub_lastcat', K_PANE='wb_lifehub_pane';
@@ -906,7 +908,7 @@ var RULES = [
 RULES[0].kw.push('改作业','讲题','出卷','学业指导','毕设指导');
 RULES[1].kw.push('读文献','改论文','写论文','跑数据','数据分析');
 RULES[2].kw.push('对接','材料整理','通知下发','填报');
-RULES[3].kw.push('晨间','整理','收纳','采买','遛狗','宠物','追剧','午睡','看剧','喝咖啡','喝茶','午休');
+RULES[3].kw.push('晨间','整理','收纳','采买','遛狗','宠物','追剧','午睡','看剧','喝咖啡','喝茶','午休','通勤','上班路上','下班路上','地铁','公交','堵车');
 
 /* 生活类二级细项：不新增色相，只用来在块内做小字标签 */
 var LIFE_SUBS = [
@@ -915,7 +917,8 @@ var LIFE_SUBS = [
   { sub:'陪伴', kw:['陪孩子','陪娃','亲子','读绘本','绘本','孩子','儿子','女儿','宝宝','接娃','送娃','父母','爸妈','家人','家庭','老公','爱人','陪'] },
   { sub:'自我', kw:['自我提升','读书','看书','听书','学英语','背单词','练字','练琴','画画','冥想','网课','学习','阅读','笔记','听课'] },
   { sub:'健康', kw:['医院','体检','复诊','看病','挂号','牙医','吃药','理疗','针灸'] },
-  { sub:'闲适', kw:['休息','睡觉','午睡','午休','看剧','追剧','刷手机','发呆','喝咖啡','喝茶','聊天','刷视频'] }
+  { sub:'闲适', kw:['休息','睡觉','午睡','午休','看剧','追剧','刷手机','发呆','喝咖啡','喝茶','聊天','刷视频'] },
+  { sub:'通勤', kw:['通勤','上班路上','下班路上','路上','地铁','公交','开车','骑车','打车','堵车','单程'] }
 ];
 function subOf(text, cat){
   if(!text) return '';
