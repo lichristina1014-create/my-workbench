@@ -1091,6 +1091,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
     <p class="dnote">未完成的待办 → 计划当天的<b>全天事件</b>；补记的时间段 → <b>定时事件</b>。<br>
       每条都带固定 UID，重复导入只会更新那一条，不会越导越多。<br>
       第一次导入时建议新建一个叫「工作台」的日历，以后都导进它，方便整体删掉重来。</p>
+    <p class="dnote" id="icsStat"></p>
   </div>
 
   <div class="dgroup">
@@ -3365,13 +3366,40 @@ function buildICS(){
   L.push('END:VCALENDAR');
   return { text: L.map(icsFold).join('\r\n') + '\r\n', nTask: nTask, nSess: nSess };
 }
+/* 首屏那 8 条示例（5 条待办 + 3 段记录）的固定 id，用来判断"现在还是示例数据" */
+var SEED_IDS = ['local_1','local_2','local_3','local_4','local_5','ls_1','ls_2','ls_3'];
+function icsOnlySample(){
+  var all = state.tasks.concat(state.sessions);
+  if(!all.length) return false;
+  for(var i = 0; i < all.length; i++){
+    if(SEED_IDS.indexOf(String(all[i].record_id)) === -1) return false;
+  }
+  return true;
+}
+var ICS = { last: 0 };
 function exportICS(){
+  /* 手抖连点会一口气下载好几份同名文件，2.5 秒内再点就忽略 */
+  if(Date.now() - ICS.last < 2500){ toast('刚刚已经导出了一份，先去下载目录看看'); return; }
   var r = buildICS();
   if(!r.nTask && !r.nSess){ toast('还没有可以导出的内容'); return; }
+  ICS.last = Date.now();
   var ok = download('工作台日历-' + todayKey() + '.ics', r.text, 'text/calendar');
-  toast(ok
-    ? ('已导出 ' + (r.nTask + r.nSess) + ' 条（待办 ' + r.nTask + ' · 时间段 ' + r.nSess + '），双击文件导入日历')
-    : '导出失败，请换个浏览器试试');
+  if(!ok){ toast('导出失败，请换个浏览器试试'); return; }
+  var n = r.nTask + r.nSess;
+  toast(icsOnlySample()
+    ? ('导出的是首屏示例数据（' + n + ' 条）—— 先清空示例再录你自己的')
+    : ('已导出 ' + n + ' 条（待办 ' + r.nTask + ' · 时间段 ' + r.nSess + '），双击文件导入日历'));
+}
+function renderIcsStat(){
+  var box = el('icsStat'); if(!box) return;
+  var r = buildICS();
+  var line = '现在这份会导出 <b>' + (r.nTask + r.nSess) + '</b> 条：'
+    + '未完成待办 ' + r.nTask + ' 条 · 时间段 ' + r.nSess + ' 段';
+  if(icsOnlySample()){
+    line += '<br><span style="color:#C4665C">注意：页面上现在还是首屏的示例数据，不是你填的内容 —— '
+      + '先点上面的「清空示例数据」，再录入你自己的，导出来的才是你的。</span>';
+  }
+  box.innerHTML = line;
 }
 
 /* ---- 语音 ---- */
@@ -3426,6 +3454,7 @@ function openDrawer(){
     : '数据只存在这台设备的浏览器里，导出 JSON 是留档，换设备时用它搬过去。';
   el('drawer').classList.add('open');
   el('mask').classList.remove('hidden');
+  renderIcsStat();
 }
 function closeDrawer(){ el('drawer').classList.remove('open'); el('mask').classList.add('hidden'); }
 
