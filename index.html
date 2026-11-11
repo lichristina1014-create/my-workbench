@@ -495,6 +495,35 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
   box-shadow:inset 0 0 0 1px #E1EDF7;font-weight:600}
 .rail button svg{flex:0 0 18px;width:18px;height:18px;opacity:.9}
 
+/* 左栏底部的「按分类看」快捷入口 */
+.rail-sep{height:1px;background:var(--line2);margin:7px 5px 6px}
+.rail-h{font-size:11px;color:var(--ink3);margin:0 0 3px;padding:0 11px;letter-spacing:.02em}
+.rail-cats{display:flex;flex-direction:column;gap:2px}
+.rail-cats button{min-height:34px;font-size:13px;gap:8px;padding:0 11px;font-weight:400}
+.rail-cats button i{width:8px;height:8px;border-radius:50%;flex:0 0 8px;opacity:.9}
+.rail-cats button .rc-n{
+  margin-left:auto;font-size:11px;font-weight:500;color:var(--ink3);
+  background:#F5F9FB;border-radius:7px;padding:1px 6px;min-width:21px;text-align:center;
+  font-variant-numeric:tabular-nums;flex:0 0 auto;
+}
+.rail-cats button .rc-n.zero{background:transparent;color:#CFD9E1}
+.rail-cats button:hover{background:#F6FAFC}
+.rail-cats button.on{color:var(--ink);font-weight:600}
+.rail-cats button.on .rc-n{background:#fff;color:var(--ink2);box-shadow:0 1px 2px rgba(46,59,71,.08)}
+/* 「全部任务」顶部的当前筛选条 */
+.list-scope{
+  display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);
+  background:#F4F9FC;border:1px solid #E4F0F8;border-radius:11px;padding:8px 11px;margin:0 0 10px;
+}
+.list-scope.hidden{display:none}
+.list-scope i{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.list-scope b{font-weight:600;color:var(--ink)}
+.list-scope button{
+  margin-left:auto;border:0;background:#fff;border-radius:8px;padding:4px 10px;
+  font-size:11.5px;color:#4E7CA8;cursor:pointer;box-shadow:0 1px 2px rgba(46,59,71,.08);flex:0 0 auto;
+}
+.list-scope button:hover{background:#EDF6FD}
+
 .stage{min-width:0}
 .pane{display:none}
 .pane.active{display:block}
@@ -665,6 +694,8 @@ body.dt-dragging .dtodo{cursor:grabbing}
   .rail button{flex:1;flex-direction:column;justify-content:center;gap:3px;min-height:0;height:auto;
     padding:5px 1px;font-size:11px;border-radius:9px;text-align:center}
   .rail button svg{width:19px;height:19px;flex:0 0 19px}
+  /* 手机上底栏只放 6 个页签，分类快捷入口隐藏，改用「全部任务」页里的筛选条 */
+  .rail-sep,.rail-h,.rail-cats{display:none}
   body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 
   .dock{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:58;max-height:84vh;overflow-y:auto;
@@ -766,6 +797,15 @@ body.dt-dragging .dtodo{cursor:grabbing}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19v-7M12 19V5M19 19v-9"/><path d="M3 21h18"/></svg>
       统计
     </button>
+
+    <div class="rail-sep" aria-hidden="true"></div>
+    <p class="rail-h">按分类看</p>
+    <div class="rail-cats" id="railCats">
+      <button data-cat="教学" title="只看教学类任务"><i data-dot="教学"></i>教学<b class="rc-n" data-n="教学">0</b></button>
+      <button data-cat="科研" title="只看科研类任务"><i data-dot="科研"></i>科研<b class="rc-n" data-n="科研">0</b></button>
+      <button data-cat="行政" title="只看行政类任务"><i data-dot="行政"></i>行政<b class="rc-n" data-n="行政">0</b></button>
+      <button data-cat="家庭生活" title="只看家庭生活类任务"><i data-dot="家庭生活"></i>家庭生活<b class="rc-n" data-n="家庭生活">0</b></button>
+    </div>
   </nav>
 
   <main class="stage">
@@ -886,6 +926,8 @@ body.dt-dragging .dtodo{cursor:grabbing}
       <h2>全部任务</h2>
       <span class="sec-hint">点「开始」计时，结束不等于完成，时间会累计</span>
     </div>
+
+    <p class="list-scope hidden" id="listScope"></p>
 
     <div class="filters">
       <div class="fgroup" id="catFilter">
@@ -1621,6 +1663,63 @@ function renderDockTodo(){
   }).join('');
 }
 
+/* ---- 左栏「按分类看」+ 全部任务顶部筛选条 ---- */
+function catTodoCount(){
+  var m = {}; CATS.forEach(function(c){ m[c] = 0; });
+  state.tasks.forEach(function(tk){
+    if(isDone(tk)) return;
+    var c = tk['分类'];
+    if(m[c] == null) m[c] = 0;
+    m[c]++;
+  });
+  return m;
+}
+function renderRailCats(){
+  var host = el('railCats'); if(!host) return;
+  var n = catTodoCount();
+  var bs = host.querySelectorAll('button[data-cat]');
+  for(var i = 0; i < bs.length; i++){
+    var b = bs[i], c = b.getAttribute('data-cat'), on = (state.filterCat === c);
+    var num = b.querySelector('.rc-n');
+    if(num){
+      num.textContent = n[c] || 0;
+      num.classList.toggle('zero', !n[c]);
+      num.title = (n[c] || 0) + ' 项未完成';
+    }
+    b.classList.toggle('on', on);
+    b.style.background = on ? (CAT_BG[c] || '#F2F8FB') : '';
+    b.style.boxShadow = on ? ('inset 3px 0 0 ' + (CAT_COLOR[c] || '#B7C6D2')) : '';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    var dot = b.querySelector('i[data-dot]');
+    if(dot) dot.style.background = CAT_COLOR[c] || '#B7C6D2';
+  }
+}
+function renderListScope(){
+  var box = el('listScope'); if(!box) return;
+  var c = state.filterCat;
+  if(c === '全部'){ box.classList.add('hidden'); box.innerHTML = ''; return; }
+  var n = 0;
+  state.tasks.forEach(function(tk){
+    if(isDone(tk)) return;
+    if((tk['分类'] || '') !== c) return;
+    n++;
+  });
+  box.classList.remove('hidden');
+  box.innerHTML = '<i style="background:' + (CAT_COLOR[c] || '#B7C6D2') + '"></i>'
+    + '正在只看 <b>' + c + '</b> · 未完成 ' + n + ' 项'
+    + '<button type="button" data-act="clearCat">看全部</button>';
+}
+/* 唯一的筛选入口：改状态 → 同步筛选条 → 重渲染（渲染函数之间不互相调用） */
+function setCatFilter(cat){
+  state.filterCat = cat;
+  var chips = document.querySelectorAll('#catFilter .fb');
+  for(var i = 0; i < chips.length; i++){
+    chips[i].classList.toggle('on', chips[i].getAttribute('data-cat') === cat);
+  }
+  renderAllList();
+  renderRailCats();
+  renderListScope();
+}
 function renderAllList(){
   var list = state.tasks.filter(function(tk){
     if(state.filterCat !== '全部' && (tk['分类'] || '') !== state.filterCat) return false;
@@ -1637,7 +1736,11 @@ function renderAllList(){
   });
   el('allList').innerHTML = list.length
     ? list.map(function(tk){ return taskRowHTML(tk, true); }).join('')
-    : emptyHTML('这个筛选下没有任务。');
+    : emptyHTML(state.filterCat === '全部'
+        ? '这个筛选下没有任务。'
+        : ('「' + state.filterCat + '」下还没有'
+            + (state.filterStatus === 'done' ? '已完成' : (state.filterStatus === 'all' ? '' : '未完成'))
+            + '的任务。点上面「看全部」回到全部任务。'));
 }
 
 /* ---- 统计里的三张图：纯字符串拼装 SVG ---- */
@@ -2966,6 +3069,8 @@ function renderAll(){
   renderToday();
   renderDockTodo();
   renderAllList();
+  renderRailCats();
+  renderListScope();
   renderStats();
   renderPie();
   renderTimeline();
@@ -3619,14 +3724,23 @@ function bindEvents(){
     var node = e.target;
     while(node && node !== el('catFilter')){
       if(node.getAttribute && node.getAttribute('data-cat')){
-        state.filterCat = node.getAttribute('data-cat');
-        document.querySelectorAll('#catFilter .fb').forEach(function(x){ x.classList.remove('on'); });
-        node.classList.add('on');
-        renderAllList();
+        setCatFilter(node.getAttribute('data-cat'));
         return;
       }
       node = node.parentNode;
     }
+  });
+  /* 左栏「按分类看」：点一下切到全部任务并只看这一类，再点一次取消 */
+  el('railCats').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button[data-cat]') : null;
+    if(!b) return;
+    var c = b.getAttribute('data-cat');
+    setCatFilter(state.filterCat === c ? '全部' : c);
+    switchPane('secList');
+  });
+  el('listScope').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button[data-act="clearCat"]') : null;
+    if(b) setCatFilter('全部');
   });
   el('statusFilter').addEventListener('change', function(){
     state.filterStatus = el('statusFilter').value;
