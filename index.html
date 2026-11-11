@@ -551,9 +551,67 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 .dock .sh-acts{margin-top:12px}
 .dock .sh-head{margin:0 0 10px}
 .dock .sh-head b{font-size:14px;font-weight:600}
+/* 时间轴页：这一天的任务空间（先排日子，不挑时间） */
+.daytask{
+  border:1px solid var(--line);border-radius:14px;background:#fff;
+  padding:11px 13px 11px;margin:0 0 12px;box-shadow:0 1px 3px rgba(46,59,71,.04);
+}
+.daytask-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.daytask-head h3{
+  font-size:13px;font-weight:600;color:var(--ink2);margin:0;
+  display:flex;align-items:center;gap:6px;
+}
+.daytask-head h3 i{width:6px;height:6px;border-radius:50%;background:#7FA8DC;flex:0 0 6px}
+.daytask-head h3 .n{font-size:11px;color:var(--ink3);font-weight:500}
+.daytask-tip{font-size:11.5px;color:var(--ink3);margin-left:auto}
+.daytask-list{display:flex;flex-direction:column;gap:6px;max-height:186px;overflow-y:auto}
+.daytask-list:empty{display:none}
+.daytask .dtodo{padding:7px 7px 7px 9px}
+.daytask .dtodo .dt-cat{
+  font-size:10.5px;color:var(--ink3);background:#F5F9FB;border-radius:6px;
+  padding:1px 6px;flex:0 0 auto;
+}
+.daytask .dtodo.done{opacity:.62;background:#FBFDFE}
+.daytask .dtodo.done .dt-name{text-decoration:line-through;color:var(--ink3)}
+.daytask-add{
+  display:flex;align-items:center;gap:7px;width:100%;min-height:34px;
+  border:1px dashed #D9E6EF;border-radius:11px;background:#FAFCFE;color:#6E8496;
+  font-size:12.5px;padding:0 11px;cursor:pointer;transition:.15s;text-align:left;
+}
+.daytask-add:hover{border-color:#B9D3E6;background:#F4FAFE;color:#4E7CA8}
+.daytask-add svg{width:14px;height:14px;flex:0 0 14px}
+.daytask-form{display:flex;gap:7px;margin-top:2px}
+.daytask-form.hidden{display:none}
+.daytask-form input{
+  flex:1;min-width:0;height:36px;border:1px solid #D9E6EF;border-radius:11px;
+  padding:0 11px;font-size:14px;background:#fff;color:var(--ink);outline:none;
+}
+.daytask-form input:focus{border-color:#A6C8E4;box-shadow:0 0 0 3px rgba(127,168,220,.14)}
+.daytask-form button{
+  flex:0 0 auto;height:36px;padding:0 15px;border:0;border-radius:11px;
+  background:#5C93C7;color:#fff;font-size:13px;font-weight:600;cursor:pointer;
+}
+.daytask-form button:hover{background:#4E86BC}
+.daytask-cats{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.daytask-cats.hidden{display:none}
+.daytask-cats .dc-h{font-size:11.5px;color:var(--ink3);margin-right:2px}
+.daytask-cats .dc{
+  display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;
+  border:1px solid var(--line);border-radius:16px;background:#fff;
+  font-size:11.5px;color:var(--ink2);cursor:pointer;transition:.14s;
+}
+.daytask-cats .dc i{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.daytask-cats .dc.on{border-color:#CFE2F4;background:#F2F8FD;color:#3F6E9C;font-weight:600}
+@media (max-width:1023px){
+  .daytask{padding:10px 11px;margin-bottom:10px}
+  .daytask-tip{display:none}
+  .daytask-form input{font-size:16px}
+}
+@keyframes rowFlash{0%,100%{background:transparent}28%{background:#FFFBEA}}
+.list .flash{animation:rowFlash 1.3s ease 2;border-radius:12px}
+
 /* 右栏：今日待办（可拖到时间轴） */
-.dtodo-list{display:flex;flex-direction:column;gap:6px;max-height:216px;overflow-y:auto}
-.dtodo{
+.dtodo-list{display:flex;flex-direction:column;gap:6px;max-height:216px;overflow-y:auto}.dtodo{
   display:flex;align-items:center;gap:8px;padding:8px 7px 8px 9px;border-radius:11px;
   border:1px solid #E9EFF3;background:#FCFDFE;cursor:grab;touch-action:none;
   font-size:12.5px;color:var(--ink);min-width:0;
@@ -850,6 +908,24 @@ body.dt-dragging .dtodo{cursor:grabbing}
         <button id="dayNext" title="后一天">&rsaquo;</button>
       </span>
       <button id="tlToday" class="fb">回到今天</button>
+    </div>
+
+    <!-- 当天任务空间：先排到这一天，几点做还没想好也没关系 -->
+    <div class="daytask">
+      <div class="daytask-head">
+        <h3><i></i>这一天要做的事<span class="n" id="dayTaskCnt"></span></h3>
+        <span class="daytask-tip">还没定几点？先放这儿</span>
+      </div>
+      <div class="daytask-list" id="dayTaskList"></div>
+      <button type="button" class="daytask-add" id="btnDayTaskAdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>点一下加一条，只排在这一天</span>
+      </button>
+      <div class="daytask-form hidden" id="dayTaskForm">
+        <input id="dayTaskInput" type="text" placeholder="要做什么？先不挑时间，排到这一天就行" autocomplete="off" maxlength="120">
+        <button type="button" id="dayTaskSave">添加</button>
+      </div>
+      <div class="daytask-cats hidden" id="dayTaskCats"></div>
     </div>
 
     <div class="struct-wrap">
@@ -2533,11 +2609,14 @@ function dtDown(e){
   var row = e.target.closest ? e.target.closest('.dtodo') : null;
   if(!row) return;
   if(e.target.closest('.dt-done')) return;
-  /* 手机上抽屉会盖住时间轴，拖动只在桌面生效 */
-  if(!window.matchMedia('(min-width:1024px)').matches) return;
+  /* 手机上右栏是抽屉、会盖住时间轴，所以那边拖动只在桌面生效；
+     但时间轴页里自带的「这一天要做的事」本来就在画布上方，手机也能拖 */
+  var inTimelinePage = !!(e.currentTarget && e.currentTarget.id === 'dayTaskList');
+  if(!inTimelinePage && !window.matchMedia('(min-width:1024px)').matches) return;
   DT.drag = {
     row: row, id: row.getAttribute('data-id'), pid: e.pointerId,
-    x0: e.clientX, y0: e.clientY, moved: false, ghost: null, mark: null, land: null
+    x0: e.clientX, y0: e.clientY, moved: false, ghost: null, mark: null, land: null,
+    fromDay: inTimelinePage
   };
   try{ row.setPointerCapture(e.pointerId); }catch(err){}
   if(e.pointerType !== 'touch') e.preventDefault();
@@ -2601,7 +2680,11 @@ function dtUp(e){
   if(d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
   if(d.mark && d.mark.parentNode) d.mark.parentNode.removeChild(d.mark);
   if(d.row) d.row.classList.remove('dtdragging');
-  if(!d.moved) return;
+  if(!d.moved){
+    /* 时间轴页的条目点一下 → 去「全部任务」里看这条的详情 */
+    if(d.fromDay && d.id) dtTapOpen(d.id);
+    return;
+  }
   if(!d.land){ toast('要松在时间轴上才算'); return; }
   var tk = findTask(d.id);
   if(!tk) return;
@@ -2618,6 +2701,28 @@ function dtCancel(e){
   if(d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
   if(d.mark && d.mark.parentNode) d.mark.parentNode.removeChild(d.mark);
   if(d.row) d.row.classList.remove('dtdragging');
+}
+/* 在时间轴页点一下任务 → 跳到「全部任务」并把这条闪一下，别让人以为点空了 */
+function flashRow(row){
+  row.classList.remove('flash');
+  void row.offsetWidth;
+  row.classList.add('flash');
+  setTimeout(function(){ row.classList.remove('flash'); }, 2600);
+}
+function dtTapOpen(id){
+  switchPane('secList');
+  var tries = 0;
+  (function look(){
+    var row = document.querySelector('#allList [data-id="' + id + '"]');
+    if(row){
+      try{ row.scrollIntoView({ block:'center', behavior:'smooth' }); }catch(e){ row.scrollIntoView(); }
+      flashRow(row);
+      return;
+    }
+    /* 当前筛掉了这一类就看不着了，放开筛选再找一次 */
+    if(tries === 0 && state.filterCat !== '全部') setCatFilter('全部');
+    if(tries < 4){ tries++; setTimeout(look, 140); }
+  })();
 }
 
 /* ---------- 绑定 ---------- */
@@ -2848,9 +2953,113 @@ function pieShift(n){
   else PIE.anchor = (Number(PIE.anchor.slice(0,4)) + n) + '-01-01';
   renderPie();
 }
+/* ---------- 时间轴页：这一天的任务空间 ---------- */
+var DAYTASK = { cat: '' };
+
+function tasksOfDay(k){
+  var out = [];
+  state.tasks.forEach(function(tk){
+    if(dateKey(tk['计划日期']) === k) out.push(tk);
+  });
+  out.sort(function(a, b){
+    var ad = isDone(a) ? 1 : 0, bd = isDone(b) ? 1 : 0;
+    if(ad !== bd) return ad - bd;
+    var ac = String(a['创建时间'] || ''), bc = String(b['创建时间'] || '');
+    if(ac !== bc) return ac < bc ? -1 : 1;
+    return 0;
+  });
+  return out;
+}
+function renderDayTasks(){
+  var host = el('dayTaskList'); if(!host) return;
+  var list = tasksOfDay(state.timelineDay);
+  var left = list.filter(function(tk){ return !isDone(tk); }).length;
+  el('dayTaskCnt').textContent = list.length ? (left + ' 项没做 · 共 ' + list.length + ' 条') : '';
+  if(!list.length){ host.innerHTML = ''; return; }
+  host.innerHTML = list.map(function(tk){
+    var c = tk['分类'] || '';
+    var done = isDone(tk);
+    return '<div class="dtodo' + (done ? ' done' : '') + '" data-id="' + esc(String(tk.record_id)) + '"'
+      + ' title="' + esc(taskTitle(tk) + (done ? ' · 已完成' : ' · 按住可以拖到下面的时间轴')) + '">'
+      + '<i style="background:' + (CAT_COLOR[c] || '#B7C6D2') + '"></i>'
+      + '<span class="dt-name">' + esc(taskTitle(tk)) + '</span>'
+      + '<span class="dt-cat">' + esc(c || '未分类') + '</span>'
+      + (done ? '' : '<button class="dt-done" data-act="done" title="标记完成" aria-label="标记完成">'
+          + '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"'
+          + ' stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'
+          + '</button>')
+      + '</div>';
+  }).join('');
+}
+function renderDayTaskCats(){
+  var host = el('dayTaskCats'); if(!host) return;
+  var inp = el('dayTaskInput');
+  var text = inp ? (inp.value || '').trim() : '';
+  var auto = text ? classify(text) : '';
+  var cur = DAYTASK.cat || auto;
+  host.innerHTML = '<span class="dc-h">' + (auto ? ('自动判断：' + auto) : '选个分类') + '</span>'
+    + CATS.map(function(c){
+        return '<button type="button" class="dc' + (cur === c ? ' on' : '') + '" data-cat="' + c + '">'
+          + '<i style="background:' + CAT_COLOR[c] + '"></i>' + c + '</button>';
+      }).join('');
+}
+function openDayTaskForm(){
+  el('dayTaskForm').classList.remove('hidden');
+  el('dayTaskCats').classList.remove('hidden');
+  el('btnDayTaskAdd').classList.add('hidden');
+  el('dayTaskInput').value = '';
+  DAYTASK.cat = '';
+  renderDayTaskCats();
+  el('dayTaskInput').focus();
+}
+function closeDayTaskForm(){
+  el('dayTaskForm').classList.add('hidden');
+  el('dayTaskCats').classList.add('hidden');
+  el('btnDayTaskAdd').classList.remove('hidden');
+  el('dayTaskInput').value = '';
+  DAYTASK.cat = '';
+}
+function addDayTask(){
+  var inp = el('dayTaskInput');
+  var text = (inp.value || '').replace(/\s+/g, ' ').trim();
+  if(!text){ toast('先写一句要做什么吧'); inp.focus(); return; }
+  var cat = DAYTASK.cat || currentCatFor(text);
+  var k = state.timelineDay;
+  var t = todayKey();
+  var when = (k === t) ? '今天' : ((k === shiftDay(t, -1)) ? '昨天' : ((k === shiftDay(t, 1)) ? '明天' : k.slice(5).replace('-', '/')));
+  inp.value = '';
+  DAYTASK.cat = '';
+  if(!db){
+    state.tasks.push({
+      record_id: 'local_' + Date.now(), '任务内容': text, '分类': cat, '状态': '待办',
+      '累计用时': 0, '计划日期': k, '创建时间': k
+    });
+    cacheSave();
+    renderAll();
+    renderDayTaskCats();
+    toast('已排到' + when + ' · ' + cat);
+    inp.focus();
+    return;
+  }
+  setSync('syncing', '同步中');
+  apiAddTask({
+    '任务内容': { text: text }, '分类': { select: cat }, '状态': { select: '待办' },
+    '累计用时': { number: 0 }, '计划日期': { date: k }, '创建时间': { date: k }
+  }).then(function(){ return reloadData(); }).then(function(){
+    renderDayTaskCats();
+    toast('已排到' + when + ' · ' + cat);
+  }).catch(function(err){
+    console.error('[workspace] 加当天任务失败:', err);
+    setSync('sync', '已同步');
+    toast('添加失败，检查网络后再试一次');
+  });
+}
+
 function renderTimeline(){
   var k = state.timelineDay, t = todayKey();
   el('dayLabel').textContent = (k === t) ? '今天' : (k === shiftDay(t, -1) ? '昨天' : k.slice(5));
+  renderDayTasks();
+  renderDayTaskCats();
   renderStructure();
   renderDayGrid();
   renderTimelineList();
@@ -3657,6 +3866,27 @@ function bindEvents(){
   el('dtodoList').addEventListener('pointermove', dtMove);
   el('dtodoList').addEventListener('pointerup', dtUp);
   el('dtodoList').addEventListener('pointercancel', dtCancel);
+
+  /* 时间轴页的「这一天要做的事」：加一条 + 同款拖进时间轴 */
+  el('btnDayTaskAdd').addEventListener('click', openDayTaskForm);
+  el('dayTaskSave').addEventListener('click', addDayTask);
+  el('dayTaskInput').addEventListener('input', renderDayTaskCats);
+  el('dayTaskInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' || e.keyCode === 13){ e.preventDefault(); addDayTask(); }
+    else if(e.key === 'Escape' || e.keyCode === 27){ closeDayTaskForm(); }
+  });
+  el('dayTaskCats').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button[data-cat]') : null;
+    if(!b) return;
+    DAYTASK.cat = b.getAttribute('data-cat');
+    renderDayTaskCats();
+    el('dayTaskInput').focus();
+  });
+  el('dayTaskList').addEventListener('click', dtClick);
+  el('dayTaskList').addEventListener('pointerdown', dtDown);
+  el('dayTaskList').addEventListener('pointermove', dtMove);
+  el('dayTaskList').addEventListener('pointerup', dtUp);
+  el('dayTaskList').addEventListener('pointercancel', dtCancel);
   var rzT = null;
   window.addEventListener('resize', function(){
     if(rzT) clearTimeout(rzT);
