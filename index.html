@@ -739,7 +739,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
 .mc.out .mc-d{color:#C6D2DB}
 .mc.on{background:#F2F9FF}
 .mc.on::after{content:"";position:absolute;inset:2px;border:1.5px solid #CFE4F5;border-radius:7px;pointer-events:none}
-.mc-top{display:flex;align-items:baseline;gap:4px;min-width:0}
+.mc-top{display:flex;align-items:baseline;gap:4px;min-width:0;overflow:hidden}
 .mc-d{font-size:12px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;line-height:1.25}
 .mc.today .mc-d{background:#5C93C7;color:#fff;border-radius:9px;padding:0 5px;box-shadow:0 1px 3px rgba(92,147,199,.35)}
 .mc-tot{margin-left:auto;font-size:9px;color:var(--ink3);white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -761,7 +761,10 @@ body.dt-dragging .dtodo{cursor:grabbing}
 .mc-plan.done em{text-decoration:line-through}
 .mc-plan.over em{color:#C4695F}
 .mc-pn{font-size:9px;color:#4E7CA8;background:#F0F7FC;border-radius:6px;padding:0 4px;
-  white-space:nowrap;line-height:1.5;flex:0 0 auto;font-variant-numeric:tabular-nums}
+  white-space:nowrap;line-height:1.5;flex:0 1 auto;min-width:0;overflow:hidden;
+  font-variant-numeric:tabular-nums;display:inline-flex;align-items:baseline;gap:1px}
+.mc-pn b{font-weight:600}
+.mc-pn i{font-style:normal}
 .mn-legend{display:flex;gap:5px 14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--ink3)}
 .mn-legend span{display:inline-flex;align-items:center;gap:5px}
 .mn-legend i{width:8px;height:8px;border-radius:3px;flex:0 0 8px}
@@ -825,6 +828,10 @@ body.dt-dragging .dtodo{cursor:grabbing}
   .mc-it i{height:9px}
   .mc-it b{display:none}
   .mc-it:not(:first-child) em{display:none}
+  .mc-pn{padding:0 3px;font-size:8.5px}
+  .mc-pn i{display:none}
+  .mc-plan{font-size:9.5px;gap:3px}
+  .mc-plan i{width:5px;height:5px;flex:0 0 5px}
   .mc.on::after{inset:1px}
   .mn-legend{font-size:10.5px;gap:4px 10px}
 }
@@ -3365,7 +3372,7 @@ function renderMonth(){
     html += '<div class="mc' + (out ? ' out' : '') + (k === t ? ' today on' : '') + '" data-day="' + k + '"'
       + (tip ? ' title="' + esc(tip) + '"' : '') + '>'
       + '<div class="mc-top"><span class="mc-d">' + dd.getDate() + '</span>'
-      + (pl.length ? '<span class="mc-pn">' + pl.length + ' 件</span>' : '')
+      + (pl.length ? '<span class="mc-pn"><b>' + pl.length + '</b><i>件</i></span>' : '')
       + (tot ? '<span class="mc-tot">' + tot + '</span>' : '') + '</div>'
       + (bar ? '<div class="mc-bar">' + bar + '</div>' : '')
       + plans
