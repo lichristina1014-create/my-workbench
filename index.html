@@ -161,6 +161,10 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .chip.c-fam{background:var(--famBg);color:#3E9585}
 .tag{padding:1px 7px;border-radius:6px;font-size:11px;line-height:17px;background:#FBF3E6;color:#B98B3E;border:1px solid #F3E5CC}
 .tag.red{background:#FDEBE9;color:#C4695F;border-color:#F5D5D0}
+/* 已完成但当时没打点的行：给一个「补到时间轴」的小按钮 */
+button.tag-do{font-family:inherit;cursor:pointer;background:#F0F7FC;color:#4E7CA8;
+  border-color:#DCEBF6;transition:.14s;padding:1px 7px;border-radius:6px;font-size:11px;line-height:17px}
+button.tag-do:hover{background:#E4F1FA;border-color:#C6E0F2;color:#3B6893}
 .tk-acts{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 .tbtn{
   height:34px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:#fff;
@@ -424,8 +428,23 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 }
 .doti i{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
 .doti b{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 圆点右缘的「拉开」把手：按住往下拉，这件小事就展成一段时间 */
+.doti .dgrip{
+  width:9px;height:14px;flex:0 0 9px;border-radius:3px;background:transparent;
+  margin:0 -3px 0 1px;position:relative;cursor:ns-resize;opacity:.42;
+  transition:opacity .14s,background .14s;
+}
+.doti .dgrip::before{
+  content:"";position:absolute;left:50%;top:3px;width:2px;height:8px;margin-left:-1px;
+  border-radius:1px;background:#9DB4C6;
+}
+.doti:hover .dgrip{opacity:.95;background:#F1F7FB}
+.doti .dgrip:hover{opacity:1;background:#E6F1FA}
+.doti .dgrip:hover::before{background:#5C93C7}
+.doti.expanding{cursor:ns-resize;border-color:#CFE2F4}
 .doti:hover{border-color:#D8E6F0;color:var(--ink);box-shadow:0 1px 4px rgba(46,59,71,.09)}
-.tl-now{position:absolute;left:0;right:0;height:0;border-top:1.5px solid #E2796F;z-index:4;pointer-events:none}
+/* 「此刻」红线压在色块之上、但要在「小事」圆点之下，否则会把圆点文字划一道 */
+.tl-now{position:absolute;left:0;right:0;height:0;border-top:1.5px solid #E2796F;z-index:2;pointer-events:none}
 .tl-now::before{content:"";position:absolute;left:-4px;top:-4.5px;width:8px;height:8px;border-radius:50%;background:#E2796F}
 .tl-empty{
   position:absolute;left:0;right:0;top:38%;text-align:center;font-size:13px;color:var(--ink3);
@@ -898,7 +917,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
   <section class="sec pane" id="secTimeline">
     <div class="sec-head">
       <h2>时间轴</h2>
-      <span class="sec-hint">在空白处按住往下拖，补记一段</span>
+      <span class="sec-hint">空白处拖＝补一段 · 点一下＝记小事 · 圆点右缘竖条下拉＝展成一段</span>
     </div>
 
     <div class="tl-bar">
@@ -942,7 +961,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
     <p class="tl-tip">
       <b>点一下空白处</b>＝往这个半小时格里记一件小事（彩色圆点，不占时长，可以连着记好几件）；
       <b>按住往下拖</b>＝记一段时间。拖动色块可以整体挪动，拖色块底部可以改结束时间；
-      <b>圆点也能直接拖</b>，拖到哪一格就落到哪一格。点一下可以改内容或删除；
+      <b>圆点也能直接拖</b>，拖到哪一格就落到哪一格；<b>按住圆点右缘的细竖条往下拉</b>＝把这一件展成一段时间。点一下可以改内容或删除；
       <b>按住 Option（⌥）再拖</b>＝原件不动，在原地复制一份到拖到的地方。
     </p>
 
@@ -1658,6 +1677,16 @@ function taskRowHTML(tk, showDel){
   }else{
     var dk = dateKey(tk['完成日期']);
     if(dk) tags += '<span class="tag">'+dk.slice(5)+' 完成</span>';
+    /* 完成那一刻在时间轴上打了点的话，把位置也标出来，一眼知道「同步到哪去了」 */
+    var dm = doneDotMap()[rid];
+    var dss = dm ? findSession(dm) : null;
+    if(dss){
+      var dsp = sessionSpan(dss);
+      if(dsp && dsp.s != null) tags += '<span class="tag">时间轴 '+minToHM(dsp.s)+'</span>';
+    }else if(dk && dk === todayKey()){
+      /* 这条是「打点功能上线前就完成了」的：不知道当时几点，给个按钮让用户补在现在 */
+      tags += '<button class="tag tag-do" data-act="dotFor" title="把它补记到时间轴现在这一格">补到时间轴</button>';
+    }
   }
   var mins = Number(tk['累计用时']) || 0;
   var meta = '<span class="chip '+cls+'">'+esc(cat || '未分类')+'</span>';
@@ -2070,9 +2099,12 @@ function renderDayGrid(){
     html += '<div class="dotline" style="top:' + (gp.slot / 60 * hr).toFixed(1) + 'px">';
     gp.items.forEach(function(ss){
       var col = CAT_COLOR[ss['分类'] || ''] || '#B7C6D2';
+      var dn = Number(ss['时长分钟']) === 0;
       html += '<span class="doti" data-id="' + esc(String(ss.record_id || '')) + '"'
-        + ' title="' + esc((ss['任务内容'] || '') + ' · ' + minToHM(gp.slot) + ' 这一格') + '">'
-        + '<i style="background:' + col + '"></i><b>' + esc(ss['任务内容'] || '') + '</b></span>';
+        + ' title="' + esc((ss['任务内容'] || '') + ' · ' + minToHM(gp.slot) + ' 这一格'
+            + (dn ? '　｜　拖动＝挪位置，右缘竖条往下拉＝展成一段时间' : '')) + '">'
+        + '<i style="background:' + col + '"></i><b>' + esc(ss['任务内容'] || '') + '</b>'
+        + '<i class="dgrip" data-dgrip="1" aria-hidden="true"></i></span>';
     });
     html += '</div>';
   });
@@ -2384,6 +2416,24 @@ function tlDown(e){
   var cv = el('tlCanvas');
   if(!cv) return;
   var dotEl = e.target.closest ? e.target.closest('.doti') : null;
+  /* 圆点右缘的竖条：按住往下拉 = 把这一件小事展成一段时间 */
+  if(dotEl && e.target.getAttribute && e.target.getAttribute('data-dgrip')){
+    var gid = dotEl.getAttribute('data-id');
+    var gss = findSession(gid);
+    var rectG = cv.getBoundingClientRect();
+    var hrG = hourH();
+    var mG = tlSnap((e.clientY - rectG.top) / hrG * 60);
+    var gslot = gss ? dotSlot(gss) : null;
+    if(gslot == null) gslot = Math.floor(mG / 30) * 30;
+    TL.drag = {
+      mode: 'expand', dot: dotEl, id: gid, ss: gss, pid: e.pointerId, hr: hrG,
+      y0: e.clientY, slot0: gslot, slot: gslot, moved: false, ghost: null, copy: false
+    };
+    dotEl.classList.add('expanding');
+    try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+    if(e.pointerType !== 'touch'){ e.preventDefault(); }
+    return;
+  }
   if(dotEl){
     var did = dotEl.getAttribute('data-id');
     var dss = findSession(did);
@@ -2459,6 +2509,25 @@ function tlMove(e){
     return;
   }
 
+  if(d.mode === 'expand'){
+    if(!d.moved) return;
+    /* 半小时一档向下长：拉一格就是 30 分钟 */
+    var stepE = d.hr / 2;
+    var rowsE = Math.max(1, Math.round((e.clientY - d.y0) / stepE));
+    var neE = Math.min(1440, d.slot0 + rowsE * 30);
+    d.slot = neE;
+    if(!d.ghost){
+      var gE = document.createElement('div');
+      gE.className = 'tl-ghost';
+      cv.appendChild(gE);
+      d.ghost = gE;
+    }
+    d.ghost.style.top = (d.slot0 / 60 * d.hr) + 'px';
+    d.ghost.style.height = Math.max(8, (neE - d.slot0) / 60 * d.hr) + 'px';
+    d.ghost.textContent = minToHM(d.slot0) + '–' + minToHM(neE);
+    return;
+  }
+
   if(d.mode === 'create' && d.ghost){
     var a = Math.min(d.anchor, d.cur), b = Math.max(d.anchor, d.cur);
     if(b - a < 15) b = Math.min(1440, a + 15);
@@ -2508,10 +2577,26 @@ function tlUp(e){
   var blkId = blk ? blk.getAttribute('data-id') : null;
   var dotNode = d.dot, dotId = d.id, ssDot = d.ss, dotFrom = d.slot0, dotTo = d.slot;
   tlCleanup();
-  if(mode === 'dot' && dotNode){
+  if((mode === 'dot' || mode === 'expand') && dotNode){
     dotNode.classList.remove('dragging');
     dotNode.classList.remove('copying');
+    dotNode.classList.remove('expanding');
     dotNode.style.transform = '';
+  }
+  if(mode === 'expand'){
+    if(!wasMoved || dotTo == null || dotTo <= dotFrom){
+      /* 只是点了一下把手：当成打开编辑，别把记录改坏 */
+      if(ssDot){
+        var se0 = dotFrom == null ? 0 : dotFrom;
+        openSheet({ id: dotId, name: ssDot['任务内容'] || '', cat: ssDot['分类'] || '',
+          s: se0, e: se0, kind: 'dot' });
+      }
+      return;
+    }
+    persistBlock({ id: dotId, name: (ssDot && ssDot['任务内容']) || '未命名',
+      cat: (ssDot && ssDot['分类']) || '家庭生活', s: dotFrom, e: dotTo });
+    toast('已展开成 ' + minToHM(dotFrom) + '–' + minToHM(dotTo) + ' 一段');
+    return;
   }
   if(mode === 'move' && blk) blk.classList.remove('copying');
   if(mode === 'dot'){
@@ -2582,9 +2667,10 @@ function tlUp(e){
 function tlCancel(e){
   var d = TL.drag;
   if(!d || e.pointerId !== d.pid) return;
-  if(d.mode === 'dot' && d.dot){
+  if((d.mode === 'dot' || d.mode === 'expand') && d.dot){
     d.dot.classList.remove('dragging');
     d.dot.classList.remove('copying');
+    d.dot.classList.remove('expanding');
     d.dot.style.transform = '';
   }
   if(d.mode === 'move' && d.blk) d.blk.classList.remove('copying');
@@ -2601,8 +2687,10 @@ function dtClick(e){
   var row = btn.closest('.dtodo');
   var tk = row ? findTask(row.getAttribute('data-id')) : null;
   if(!tk) return;
-  setStatus(tk, true);
-  toast('做好了 · ' + taskTitle(tk));
+  var sl = setStatus(tk, true);
+  toast(sl != null
+    ? ('做好了 · 时间轴 ' + minToHM(sl) + ' 那一格记了一个点')
+    : ('做好了 · ' + taskTitle(tk)));
 }
 function dtDown(e){
   if(e.button != null && e.button !== 0) return;
@@ -2690,7 +2778,8 @@ function dtUp(e){
   if(!tk) return;
   var land = d.land;
   persistBlock({ id: null, name: taskTitle(tk), cat: tk['分类'] || '教学', s: land.s, e: land.e });
-  if(!isDone(tk)) setStatus(tk, true);
+  /* 这一段本身已经是时间轴上的记录了，别再额外打一个点 */
+  if(!isDone(tk)) setStatus(tk, true, { noDot: true });
   toast('已记上 ' + minToHM(land.s) + '–' + minToHM(land.e) + '，任务也标记完成了');
 }
 function dtCancel(e){
@@ -3499,12 +3588,99 @@ function stopTimer(silent){
 }
 
 /* ---- 任务操作 ---- */
-function setStatus(tk, done){
+/* ---------- 勾完成 → 在时间轴「那一刻」补一个完成点 ---------- */
+/* 打点的记录就是普通「一件小事」（时长 0），所以拖动、展开、删除全都现成可用。
+   用 K_DONEDOT 记住「任务 → 那个点」，取消完成时才知道该删哪一条。 */
+var K_DONEDOT = 'wb_lifehub_donedot';
+function doneDotMap(){
+  var m = readLSJSON(K_DONEDOT, {});
+  return (m && typeof m === 'object') ? m : {};
+}
+function saveDoneDotMap(m){ writeLS(K_DONEDOT, JSON.stringify(m || {})); }
+/* 完成那一刻落在哪个半小时格（与「点一下空白处记小事」同一口径：往下取整） */
+function nowSlotMin(){
+  var n = new Date();
+  return Math.max(0, Math.min(1410, Math.floor((n.getHours() * 60 + n.getMinutes()) / 30) * 30));
+}
+function addDoneDot(tk, slot){
   var rid = String(tk.record_id);
+  var m = doneDotMap();
+  if(m[rid] && findSession(m[rid])) return null;   /* 这一条已经打过点了，别重复 */
+  var day = todayKey();
+  var props = {
+    '任务内容': taskTitle(tk),
+    '分类': tk['分类'] || '教学',
+    '开始时间': wallISO(dateAt(day, slot)),
+    '结束时间': wallISO(dateAt(day, slot)),
+    '时长分钟': 0,
+    '日期': day
+  };
+  if(!db){
+    props.record_id = 'local_' + Date.now() + '_dn' + Math.floor(Math.random() * 1000);
+    state.sessions.push(props);
+    m[rid] = props.record_id; saveDoneDotMap(m);
+    cacheSave();
+    return slot;
+  }
+  var pending = 'pending_' + rid;
+  m[rid] = pending; saveDoneDotMap(m);
+  setSync('syncing', '同步中');
+  apiAddSession(props).then(function(res){
+    var nid = res && (res.record_id || res.id || (res.data && (res.data.record_id || res.data.id)));
+    var mm = doneDotMap();
+    if(nid) mm[rid] = String(nid); else delete mm[rid];
+    saveDoneDotMap(mm);
+    return reloadData();
+  }).catch(function(err){
+    console.error('[workspace] 完成打点失败:', err);
+    var mm = doneDotMap(); if(mm[rid] === pending) delete mm[rid];
+    saveDoneDotMap(mm);
+  });
+  return slot;
+}
+function dotForTask(tk){
+  var sl = addDoneDot(tk, nowSlotMin());
+  renderAll();
+  toast(sl != null
+    ? ('已补到时间轴 ' + minToHM(sl) + ' 那一格，位置不对可以拖')
+    : '这条已经在时间轴上了');
+}
+function dropDoneDot(tk){
+  var rid = String(tk.record_id);
+  var m = doneDotMap();
+  var sid = m[rid];
+  if(!sid) return false;
+  var ss = findSession(sid);
+  if(!ss){ delete m[rid]; saveDoneDotMap(m); return false; }
+  /* 用户可能已经把它拖走了、或拉开展成了一段 —— 那就当成他的记录，别删 */
+  if(Number(ss['时长分钟']) !== 0) return false;
+  if(String(ss['任务内容'] || '') !== taskTitle(tk)) return false;
+  delete m[rid]; saveDoneDotMap(m);
+  if(!db || isLocalId(sid)){
+    var i = -1;
+    state.sessions.forEach(function(x, k){ if(String(x.record_id) === String(sid)) i = k; });
+    if(i > -1) state.sessions.splice(i, 1);
+    cacheSave();
+    return true;
+  }
+  setSync('syncing', '同步中');
+  apiDeleteSession(sid).then(function(){ return reloadData(); })
+    .catch(function(){ /* 删不掉就算了，不能因为一个点挡住「取消完成」 */ });
+  return true;
+}
+
+function setStatus(tk, done, opts){
+  opts = opts || {};
+  var rid = String(tk.record_id);
+  var was = isDone(tk);
   tk['状态'] = done ? '已完成' : '待办';
   if(done) tk['完成日期'] = todayKey();
+  /* 从「没完成」变「完成」的那一刻打点；拖进时间轴那种已经记了时间段的，用 opts.noDot 跳过 */
+  var slot = null;
+  if(done && !was && !opts.noDot) slot = addDoneDot(tk, nowSlotMin());
+  if(!done && was) dropDoneDot(tk);
   renderAll();
-  if(!db || isLocalId(rid)){ cacheSave(); return; }
+  if(!db || isLocalId(rid)){ cacheSave(); return slot; }
   var props = {};
   props['状态'] = { select: done ? '已完成' : '待办' };
   if(done) props['完成日期'] = { date: todayKey() };
@@ -3516,6 +3692,7 @@ function setStatus(tk, done){
     toast('更新失败，正在拉取最新数据');
     return reloadData();
   });
+  return slot;
 }
 function carryTask(tk){
   var rid = String(tk.record_id);
@@ -3786,13 +3963,24 @@ function onListClick(ev, withDel){
   if(!act || !card) return;
   var tk = findTask(card.getAttribute('data-id'));
   if(!tk) return;
-  if(act === 'toggle') setStatus(tk, !isDone(tk));
+  if(act === 'toggle'){
+    var wasD = isDone(tk);
+    var slT = setStatus(tk, !wasD);
+    if(!wasD){
+      toast(slT != null
+        ? ('已完成 · 时间轴 ' + minToHM(slT) + ' 那一格记了一个点')
+        : '已完成');
+    }else{
+      toast('已改回待办');
+    }
+  }
+  else if(act === 'dotFor') dotForTask(tk);
   else if(act === 'timer') startTimer(tk);
   else if(act === 'del' && withDel) delTask(tk);
 }
 /* ---------- 左栏页签切换 ---------- */
 function switchPane(id, noScroll){
-  var btns = document.querySelectorAll('#segnav button');
+  var btns = document.querySelectorAll('#segnav button[data-target]');
   var found = false;
   for(var i = 0; i < btns.length; i++){
     var on = btns[i].getAttribute('data-target') === id;
