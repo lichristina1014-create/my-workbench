@@ -159,6 +159,22 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .chip.c-res{background:var(--resBg);color:#C4665C}
 .chip.c-adm{background:var(--admBg);color:#4E7CA8}
 .chip.c-fam{background:var(--famBg);color:#3E9585}
+/* 分类标签可以点：点开手动改 */
+button.chip{border:0;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:3px;
+  transition:filter .14s,box-shadow .14s}
+button.chip:hover{filter:brightness(.96);box-shadow:0 0 0 1.5px rgba(92,147,199,.18)}
+button.chip .cat-caret{opacity:.5;flex:0 0 auto;margin-right:-2px}
+button.chip:hover .cat-caret{opacity:.9}
+/* 改分类的小菜单 */
+.catpop{position:fixed;z-index:96;min-width:136px;padding:5px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 12px 30px rgba(46,59,71,.16);display:flex;flex-direction:column;gap:2px}
+.catpop.hidden{display:none}
+.catpop button{display:flex;align-items:center;gap:8px;height:33px;padding:0 9px;border:0;border-radius:8px;
+  background:transparent;font-size:13px;color:var(--ink);cursor:pointer;font-family:inherit;text-align:left}
+.catpop button:hover{background:#F5F9FC}
+.catpop button i{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.catpop button.on{background:#F2F8FD;font-weight:600}
+.catpop button .ck{margin-left:auto;color:#5C93C7;flex:0 0 auto}
 .tag{padding:1px 7px;border-radius:6px;font-size:11px;line-height:17px;background:#FBF3E6;color:#B98B3E;border:1px solid #F3E5CC}
 .tag.red{background:#FDEBE9;color:#C4695F;border-color:#F5D5D0}
 /* 已完成但当时没打点的行：给一个「补到时间轴」的小按钮 */
@@ -588,8 +604,10 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 .daytask .dtodo{padding:7px 7px 7px 9px}
 .daytask .dtodo .dt-cat{
   font-size:10.5px;color:var(--ink3);background:#F5F9FB;border-radius:6px;
-  padding:1px 6px;flex:0 0 auto;
+  padding:1px 6px;flex:0 0 auto;border:1px solid transparent;font-family:inherit;
+  cursor:pointer;transition:.14s;
 }
+.daytask .dtodo .dt-cat:hover{background:#EDF6FC;border-color:#DCEBF6;color:#4E7CA8}
 .daytask .dtodo.done{opacity:.62;background:#FBFDFE}
 .daytask .dtodo.done .dt-name{text-decoration:line-through;color:var(--ink3)}
 .daytask-add{
@@ -1262,6 +1280,8 @@ body.dt-dragging .dtodo{cursor:grabbing}
 </aside>
 
 <div id="toast" class="toast hidden"></div>
+<!-- 点分类标签弹出的小菜单：手动改这一条属于哪一类 -->
+<div id="catPop" class="catpop hidden" role="dialog" aria-label="改分类"></div>
 
 <script>
 (function(){
@@ -1707,7 +1727,12 @@ function taskRowHTML(tk, showDel){
     }
   }
   var mins = Number(tk['累计用时']) || 0;
-  var meta = '<span class="chip '+cls+'">'+esc(cat || '未分类')+'</span>';
+  var meta = '<button type="button" class="chip catbtn '+cls+'" data-act="cat"'
+    + ' title="这一条记成了「' + esc(cat || '未分类') + '」，点一下可以改">'
+    + esc(cat || '未分类')
+    + '<svg class="cat-caret" viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor"'
+    + ' stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
+    + '</button>';
   meta += '<span>'+(mins > 0 ? '已用 '+esc(fmtMin(mins)) : '还没计时')+'</span>';
   meta += tags;
 
@@ -2700,6 +2725,13 @@ function tlCancel(e){
 var DT = { drag: null };
 
 function dtClick(e){
+  var catBtn = e.target.closest ? e.target.closest('[data-act="cat"]') : null;
+  if(catBtn){
+    var rowC = catBtn.closest('.dtodo');
+    var tkC = rowC ? findTask(rowC.getAttribute('data-id')) : null;
+    if(tkC) openCatPop(catBtn, tkC);
+    return;
+  }
   var btn = e.target.closest ? e.target.closest('.dt-done') : null;
   if(!btn) return;
   var row = btn.closest('.dtodo');
@@ -2715,6 +2747,8 @@ function dtDown(e){
   var row = e.target.closest ? e.target.closest('.dtodo') : null;
   if(!row) return;
   if(e.target.closest('.dt-done')) return;
+  /* 点分类标签是「改分类」，不是拖拽也不是「去全部任务看详情」 */
+  if(e.target.closest('[data-act="cat"]')) return;
   /* 手机上右栏是抽屉、会盖住时间轴，所以那边拖动只在桌面生效；
      但时间轴页里自带的「这一天要做的事」本来就在画布上方，手机也能拖 */
   var inTimelinePage = !!(e.currentTarget && e.currentTarget.id === 'dayTaskList');
@@ -3090,7 +3124,7 @@ function renderDayTasks(){
       + ' title="' + esc(taskTitle(tk) + (done ? ' · 已完成' : ' · 按住可以拖到下面的时间轴')) + '">'
       + '<i style="background:' + (CAT_COLOR[c] || '#B7C6D2') + '"></i>'
       + '<span class="dt-name">' + esc(taskTitle(tk)) + '</span>'
-      + '<span class="dt-cat">' + esc(c || '未分类') + '</span>'
+      + '<button type="button" class="dt-cat" data-act="cat" title="点一下改分类">' + esc(c || '未分类') + '</button>'
       + (done ? '' : '<button class="dt-done" data-act="done" title="标记完成" aria-label="标记完成">'
           + '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"'
           + ' stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'
@@ -3733,6 +3767,51 @@ function dropDoneDot(tk){
   return true;
 }
 
+/* ---------- 点分类标签，手动改这一条的分类 ---------- */
+var CATPOP = { tk: null, anchor: null };
+function closeCatPop(){
+  var pop = el('catPop'); if(pop) pop.classList.add('hidden');
+  CATPOP.tk = null; CATPOP.anchor = null;
+}
+function openCatPop(anchor, tk){
+  var pop = el('catPop'); if(!pop || !anchor || !tk) return;
+  var cur = tk['分类'] || '';
+  pop.innerHTML = CATS.map(function(c){
+    var on = (c === cur);
+    return '<button type="button" data-cat="' + c + '"' + (on ? ' class="on"' : '') + '>'
+      + '<i style="background:' + CAT_COLOR[c] + '"></i>' + c
+      + (on ? '<svg class="ck" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"'
+          + ' stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>' : '')
+      + '</button>';
+  }).join('');
+  CATPOP.tk = tk; CATPOP.anchor = anchor;
+  pop.classList.remove('hidden');
+  /* 贴着标签下沿弹出；下方放不下就翻到上面，左右不出屏幕 */
+  var r = anchor.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.min(window.innerWidth - pw - 8, Math.max(8, r.left));
+  var top = r.bottom + 6;
+  if(top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+}
+function setTaskCat(tk, cat){
+  if(!tk || !cat || (tk['分类'] || '') === cat) return;
+  var rid = String(tk.record_id);
+  var old = tk['分类'] || '未分类';
+  tk['分类'] = cat;
+  renderAll();
+  toast('「' + taskTitle(tk).slice(0, 12) + '」从 ' + old + ' 改成 ' + cat);
+  if(!db || isLocalId(rid)){ cacheSave(); return; }
+  setSync('syncing', '同步中');
+  apiUpdateTask(rid, { '分类': { select: cat } }).then(function(){
+    return reloadData();
+  }).catch(function(err){
+    console.error('[workspace] 改分类失败:', err);
+    toast('分类没同步上，检查网络后再点一次');
+    return reloadData();
+  });
+}
+
 function setStatus(tk, done, opts){
   opts = opts || {};
   var rid = String(tk.record_id);
@@ -4018,15 +4097,19 @@ function openDrawer(){
 function closeDrawer(){ el('drawer').classList.remove('open'); el('mask').classList.add('hidden'); }
 
 function onListClick(ev, withDel){
-  var node = ev.target, act = null, card = null;
+  var node = ev.target, act = null, card = null, actNode = null;
   while(node && node !== ev.currentTarget){
-    if(node.getAttribute && node.getAttribute('data-act')){ act = node.getAttribute('data-act'); }
+    if(node.getAttribute && node.getAttribute('data-act')){ act = node.getAttribute('data-act'); actNode = node; }
     if(node.getAttribute && node.getAttribute('data-id')){ card = node; break; }
     node = node.parentNode;
   }
   if(!act || !card) return;
   var tk = findTask(card.getAttribute('data-id'));
   if(!tk) return;
+  if(act === 'cat'){
+    openCatPop(actNode || card, tk);
+    return;
+  }
   if(act === 'toggle'){
     var wasD = isDone(tk);
     var slT = setStatus(tk, !wasD);
@@ -4143,6 +4226,27 @@ function bindEvents(){
   el('dayTaskList').addEventListener('pointermove', dtMove);
   el('dayTaskList').addEventListener('pointerup', dtUp);
   el('dayTaskList').addEventListener('pointercancel', dtCancel);
+
+  /* 改分类的小菜单：选中即改；点外面 / Esc / 滚动都收起 */
+  el('catPop').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button[data-cat]') : null;
+    if(!b) return;
+    var tkP = CATPOP.tk;
+    closeCatPop();
+    if(tkP) setTaskCat(tkP, b.getAttribute('data-cat'));
+  });
+  document.addEventListener('pointerdown', function(e){
+    var pop = el('catPop');
+    if(!pop || pop.classList.contains('hidden')) return;
+    if(pop.contains(e.target)) return;
+    if(CATPOP.anchor && CATPOP.anchor.contains(e.target)) return;
+    closeCatPop();
+  }, true);
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' || e.keyCode === 27) closeCatPop();
+  });
+  window.addEventListener('scroll', function(){ closeCatPop(); }, true);
+  window.addEventListener('resize', function(){ closeCatPop(); });
   var rzT = null;
   window.addEventListener('resize', function(){
     if(rzT) clearTimeout(rzT);
