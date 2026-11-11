@@ -1332,7 +1332,7 @@ var RULES = [
 ];
 /* 补记场景的补充词（补在原有词表后面，不覆盖） */
 RULES[0].kw.push('改作业','讲题','出卷','学业指导','毕设指导');
-RULES[1].kw.push('读文献','改论文','写论文','跑数据','数据分析');
+RULES[1].kw.push('读文献','改论文','写论文','跑数据','数据分析','改写','修订','润色','结论部分','讨论部分');
 RULES[2].kw.push('对接','材料整理','通知下发','填报','邮件','回邮件','发邮件','寄件');
 RULES[3].kw.push('晨间','整理','收纳','采买','遛狗','宠物','追剧','午睡','看剧','喝咖啡','喝茶','午休','通勤','上班路上','下班路上','地铁','公交','堵车','取快递','快递','缴费','充话费','摸鱼','发呆','放空','走神','刷手机','刷视频','打游戏','休息');
 
@@ -2996,8 +2996,12 @@ function renderDayTaskCats(){
   var inp = el('dayTaskInput');
   var text = inp ? (inp.value || '').trim() : '';
   var auto = text ? classify(text) : '';
-  var cur = DAYTASK.cat || auto;
-  host.innerHTML = '<span class="dc-h">' + (auto ? ('自动判断：' + auto) : '选个分类') + '</span>'
+  /* 没看出关键词时，用和 addDayTask 完全一样的回退口径（currentCatFor），
+     这样"按钮上高亮的那个"就一定是"待会儿真正存进去的那个"，不让用户猜 */
+  var cur = DAYTASK.cat || auto || (text ? currentCatFor(text) : '');
+  var head = !text ? '选个分类'
+    : (auto ? ('自动判断：' + auto) : ('没看出关键词，先按「' + cur + '」算'));
+  host.innerHTML = '<span class="dc-h">' + head + '</span>'
     + CATS.map(function(c){
         return '<button type="button" class="dc' + (cur === c ? ' on' : '') + '" data-cat="' + c + '">'
           + '<i style="background:' + CAT_COLOR[c] + '"></i>' + c + '</button>';
