@@ -727,7 +727,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
 .mn-wrap{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
 .mn-dow{display:grid;grid-template-columns:repeat(7,1fr);background:#FBFDFE;border-bottom:1px solid var(--line2)}
 .mn-dow span{text-align:center;font-size:11px;color:var(--ink3);padding:6px 0}
-.mn-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:clamp(106px,6.8vw,150px)}
+.mn-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:clamp(118px,7.2vw,156px)}
 .mc{
   position:relative;display:flex;flex-direction:column;gap:3px;min-width:0;cursor:pointer;
   padding:5px 5px 4px;border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);
@@ -751,6 +751,17 @@ body.dt-dragging .dtodo{cursor:grabbing}
 .mc-it em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .mc-it b{font-weight:500;color:var(--ink3);font-size:8.5px;margin-left:auto;flex:0 0 auto;letter-spacing:-.2px}
 .mc-more{font-size:9.5px;color:var(--ink3);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* 这一天「安排」的事（任务是计划日期，不是记录）——空圈＝待办，实心＝已完成 */
+.mc-plans{display:flex;flex-direction:column;gap:2px;min-width:0;padding-bottom:2px;
+  border-bottom:1px dashed #EDF3F7;margin-bottom:1px}
+.mc-plan{display:flex;align-items:center;gap:4px;font-size:10.5px;line-height:1.35;color:var(--ink);min-width:0}
+.mc-plan i{width:7px;height:7px;border-radius:50%;border:1.4px solid #B7C6D2;background:#fff;flex:0 0 7px;box-sizing:border-box}
+.mc-plan em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mc-plan.done{color:#A9B8C4}
+.mc-plan.done em{text-decoration:line-through}
+.mc-plan.over em{color:#C4695F}
+.mc-pn{font-size:9px;color:#4E7CA8;background:#F0F7FC;border-radius:6px;padding:0 4px;
+  white-space:nowrap;line-height:1.5;flex:0 0 auto;font-variant-numeric:tabular-nums}
 .mn-legend{display:flex;gap:5px 14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--ink3)}
 .mn-legend span{display:inline-flex;align-items:center;gap:5px}
 .mn-legend i{width:8px;height:8px;border-radius:3px;flex:0 0 8px}
@@ -806,7 +817,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
   .wk-hd b{font-size:10.5px}
   .wk-hd span{font-size:9px}
   .wk-blk{font-size:8px;padding:0 2px}
-  .mn-grid{grid-auto-rows:84px}
+  .mn-grid{grid-auto-rows:96px}
   .mc{padding:4px 3px 3px;gap:2px}
   .mc-d{font-size:11px}
   .mc-tot{display:none}
@@ -995,7 +1006,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
   <section class="sec pane" id="secMonth">
     <div class="sec-head">
       <h2>月历</h2>
-      <span class="sec-hint">哪天上过课、哪天运动了，看格子里的颜色和条数就知道</span>
+      <span class="sec-hint">空圈＝这天安排的事 · 彩色条＝实际记下的时间</span>
     </div>
 
     <div class="tl-bar">
@@ -3283,13 +3294,34 @@ function renderMonth(){
   var t = todayKey();
   el('mnLabel').textContent = y + ' 年 ' + mo + ' 月';
 
-  var html = '', sumMin = 0, sumBy = {}, nd = 0;
+  var html = '', sumMin = 0, sumBy = {}, nd = 0, sumPlan = 0, sumPlanDone = 0;
   /* 手机格子窄矮，少列一条，多的收进「+N」 */
   var maxItems = window.innerWidth <= 1023 ? 2 : 3;
+  var maxPlan = window.innerWidth <= 1023 ? 1 : 2;
+
+  /* 「安排在某一天」的事 = 任务上有计划日期，跟记没记时间没关系 */
+  var plan = {};
+  state.tasks.forEach(function(tk){
+    var d = dateKey(tk['计划日期']);
+    if(!d) return;
+    (plan[d] || (plan[d] = [])).push(tk);
+  });
+  Object.keys(plan).forEach(function(d){
+    plan[d].sort(function(a, b){
+      var ad = isDone(a) ? 1 : 0, bd = isDone(b) ? 1 : 0;
+      if(ad !== bd) return ad - bd;                 /* 没做的排前面 */
+      var ac = String(a['创建时间'] || ''), bc = String(b['创建时间'] || '');
+      return ac < bc ? -1 : (ac > bc ? 1 : 0);
+    });
+  });
+
   for(var i = 0; i < cells; i++){
     var k = shiftDay(start, i), dd = dateAt(k, 0), a = agg[k];
     var out = k.slice(0, 7) !== cur;
     var bar = '', list = '', tot = '', extra = [];
+    /* 这一天「安排」的事：格子矮，有安排时记录只列 2 条（手机 1 条），别把格子撑爆 */
+    var pl = plan[k] || [];
+    var maxT = pl.length ? (window.innerWidth <= 1023 ? 1 : 2) : maxItems;
     if(a){
       if(!out){
         sumMin += a.min; nd += a.dots;
@@ -3301,31 +3333,56 @@ function renderMonth(){
           if(m) bar += '<i style="width:' + (m / a.min * 100).toFixed(2) + '%;background:' + CAT_COLOR[c] + '"></i>';
         });
         tot = shortMin(a.min);
-        list = a.items.slice(0, maxItems).map(function(it){
+        list = a.items.slice(0, maxT).map(function(it){
           return '<span class="mc-it"><i style="background:' + (CAT_COLOR[it.cat] || '#B7C6D2') + '"></i>'
             + '<em>' + esc(it.name) + '</em><b>' + shortMin(it.min) + '</b></span>';
         }).join('');
-        if(a.items.length > maxItems) extra.push('+' + (a.items.length - maxItems) + ' 项');
+        if(a.items.length > maxT) extra.push('+' + (a.items.length - maxT) + ' 项');
       }
       if(a.dots) extra.push('小事 ' + a.dots);
-      if(extra.length) list += '<span class="mc-more">' + extra.join(' · ') + '</span>';
     }
-    html += '<div class="mc' + (out ? ' out' : '') + (k === t ? ' today on' : '') + '" data-day="' + k + '">'
+
+    /* 这一天的安排：空圈＝还没做，实心＝已完成，逾期没做的标题标红 */
+    var plans = '';
+    if(pl.length){
+      if(!out){ sumPlan += pl.length; }
+      plans = pl.slice(0, maxPlan).map(function(tk){
+        var dn = isDone(tk), col = CAT_COLOR[tk['分类']] || '#B7C6D2';
+        var over = !dn && k < t;
+        if(!out && dn) sumPlanDone++;
+        return '<span class="mc-plan' + (dn ? ' done' : '') + (over ? ' over' : '') + '">'
+          + '<i style="' + (dn ? ('background:' + col + ';border-color:' + col) : ('border-color:' + col)) + '"></i>'
+          + '<em>' + esc(taskTitle(tk)) + '</em></span>';
+      }).join('');
+      if(pl.length > maxPlan) extra.push('另有 ' + (pl.length - maxPlan) + ' 件安排');
+      plans = '<div class="mc-plans">' + plans + '</div>';
+    }
+    if(extra.length) list += '<span class="mc-more">' + extra.join(' · ') + '</span>';
+
+    var tip = pl.length
+      ? pl.map(function(tk){ return (isDone(tk) ? '✓ ' : '○ ') + taskTitle(tk); }).join('\n')
+      : '';
+    html += '<div class="mc' + (out ? ' out' : '') + (k === t ? ' today on' : '') + '" data-day="' + k + '"'
+      + (tip ? ' title="' + esc(tip) + '"' : '') + '>'
       + '<div class="mc-top"><span class="mc-d">' + dd.getDate() + '</span>'
+      + (pl.length ? '<span class="mc-pn">' + pl.length + ' 件</span>' : '')
       + (tot ? '<span class="mc-tot">' + tot + '</span>' : '') + '</div>'
       + (bar ? '<div class="mc-bar">' + bar + '</div>' : '')
+      + plans
       + '<div class="mc-list">' + list + '</div></div>';
   }
   host.innerHTML = html;
 
   el('mnLegend').innerHTML = CATS.map(function(c){
     return '<span><i style="background:' + CAT_COLOR[c] + '"></i>' + c + '</span>';
-  }).join('') + '<span><i style="background:#CFE2F4"></i>顶上那条越长 = 这块占得越多</span>';
+  }).join('') + '<span><i style="background:#CFE2F4"></i>顶上那条越长 = 这块占得越多</span>'
+    + '<span><i style="width:8px;height:8px;border-radius:50%;background:#fff;border:1.4px solid #7FA8DC"></i>空圈＝安排还没做</span>';
 
   var s = '这个月共 <b>' + fmtMin(sumMin) + '</b>';
   CATS.forEach(function(c){ if(sumBy[c]) s += ' · ' + c + ' ' + fmtMin(sumBy[c]); });
   if(nd) s += ' · 另有 ' + nd + ' 件小事';
-  el('mnSum').innerHTML = (sumMin || nd) ? s : '这个月还没有记录。左右翻能看到任意一个月。';
+  if(sumPlan) s += ' · 安排 <b>' + sumPlan + '</b> 件（已做 ' + sumPlanDone + '）';
+  el('mnSum').innerHTML = (sumMin || nd || sumPlan) ? s : '这个月还没有记录。左右翻能看到任意一个月。';
 }
 function gotoDay(k){
   if(!k) return;
