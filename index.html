@@ -177,6 +177,11 @@ button.chip:hover .cat-caret{opacity:.9}
 .catpop button .ck{margin-left:auto;color:#5C93C7;flex:0 0 auto}
 .tag{padding:1px 7px;border-radius:6px;font-size:11px;line-height:17px;background:#FBF3E6;color:#B98B3E;border:1px solid #F3E5CC}
 .tag.red{background:#FDEBE9;color:#C4695F;border-color:#F5D5D0}
+/* 只是说明「什么时候做」，不是提醒，用中性的灰蓝，别和琥珀/红的警示标混在一起 */
+.tag.date{background:#F4F8FA;color:#66757F;border-color:#E4EDF2}
+.tag.date i{font-style:normal;margin-left:3px}
+/* 手机上行内容太挤，截止日只留日期，省两个字免得标签被挤到下一行 */
+@media (max-width:1023px){.tag.date i{display:none}}
 /* 已完成但当时没打点的行：给一个「补到时间轴」的小按钮 */
 button.tag-do{font-family:inherit;cursor:pointer;background:#F0F7FC;color:#4E7CA8;
   border-color:#DCEBF6;transition:.14s;padding:1px 7px;border-radius:6px;font-size:11px;line-height:17px}
@@ -1323,7 +1328,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
     <h4>说明</h4>
     <div class="dnote">
       · 左边是功能页签，中间看内容，<b>右边录入</b>——加待办、补记已经做过的都在右边一次写完。<br>
-      · 「今天要处理」置顶显示逾期与今日待办，昨天没做完的会自动顺延到今天，并标「顺延 N 天」。<br>
+      · 「今天要处理」置顶显示逾期与今日待办，昨天没做完的会自动滚到今天。<b>「全部任务」里每条标出什么时候该做</b>——日子还没到标「12-31 截止」，到了或过了标「今天」，确实过了原定日子的另标一个红色「逾期 N 天」。<br>
       · 计时：点「开始」开始计时，点「结束计时」把这一段的时长累加到任务上；<b>结束不等于完成</b>，下次可以接着计时。<br>
       · 勾选圆圈才算完成，会自动记录完成日期。<br>
       · 断网或连接异常时自动切到本机缓存模式，恢复后以云端数据为准。
@@ -1619,12 +1624,13 @@ function migrateOverdue(){
 /* ================= 5. 计算层（纯计算，不碰 DOM） ================= */
 function isDone(tk){ return (tk['状态'] || '待办') === '已完成'; }
 function taskTitle(tk){ return tk['任务内容'] || '(未命名任务)'; }
-function carryDays(tk){
-  var c = dateKey(tk['创建时间']), p = dateKey(tk['计划日期']);
-  if(!c || !p) return 0;
-  var a = new Date(c + 'T00:00:00'), b = new Date(p + 'T00:00:00');
-  var n = Math.round((b - a) / 86400000);
-  return n > 0 ? n : 0;
+/* 「什么时候该做」：日子还没到就标出截止日；到了或过了标「今天」（在「今天要处理」里就都是今天，不重复标） */
+function planTagOf(tk, today, withToday){
+  var pk = dateKey(tk['计划日期']);
+  if(!pk) return '';
+  if(pk <= today) return withToday ? '<span class="tag date">今天</span>' : '';
+  var sameYear = pk.slice(0, 4) === today.slice(0, 4);
+  return '<span class="tag date">' + esc(sameYear ? pk.slice(5) : pk) + '<i>截止</i></span>';
 }
 function bucketToday(){
   var today = todayKey();
@@ -1751,7 +1757,7 @@ function daysBetween(a, b){
   var d1 = new Date(a+'T00:00:00'), d2 = new Date(b+'T00:00:00');
   return Math.max(0, Math.round((d2 - d1) / 86400000));
 }
-function taskRowHTML(tk, showDel){
+function taskRowHTML(tk, showDel, showDate){
   var cat = tk['分类'] || '';
   var cls = CAT_CLS[cat] || '';
   var done = isDone(tk);
@@ -1760,8 +1766,8 @@ function taskRowHTML(tk, showDel){
   var today = todayKey();
   var tags = '';
   if(!done){
-    var cd = carryDays(tk);
-    if(cd > 0) tags += '<span class="tag">顺延 '+cd+' 天</span>';
+    /* 没到日子的要标出截止日（两个列表都会出现未来的任务）；今天/逾期的只在「全部任务」里标「今天」 */
+    tags += planTagOf(tk, today, !!showDate);
     var pk = dateKey(tk['计划日期']);
     if(pk && pk < today) tags += '<span class="tag red">逾期 '+daysBetween(pk, today)+' 天</span>';
   }else{
@@ -1935,7 +1941,7 @@ function renderAllList(){
     return (Number(b['累计用时']) || 0) - (Number(a['累计用时']) || 0);
   });
   el('allList').innerHTML = list.length
-    ? list.map(function(tk){ return taskRowHTML(tk, true); }).join('')
+    ? list.map(function(tk){ return taskRowHTML(tk, true, true); }).join('')
     : emptyHTML(state.filterCat === '全部'
         ? '这个筛选下没有任务。'
         : ('「' + state.filterCat + '」下还没有'
