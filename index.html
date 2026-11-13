@@ -495,8 +495,41 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 .sh-dur{font-size:12px;color:var(--ink3);margin-left:auto;white-space:nowrap}
 .sh-acts{display:flex;gap:10px;margin-top:16px}
 .sh-acts .btn{flex:1;height:47px}
+.sh-acts .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.danger{color:#C4746A;border-color:#F0D9D5;background:#FFF7F5}
 .btn.danger:hover{background:#FDEEEA}
+
+/* 批量录入 */
+.bulkopen{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;height:34px;margin-top:10px;padding:0 10px;cursor:pointer;
+  border:1px dashed #DCE6EE;border-radius:11px;background:transparent;
+  color:var(--ink3);font-size:12px;font-family:inherit;transition:.16s;
+}
+.bulkopen:hover{border-color:#B7D3E8;color:var(--ink2);background:#FBFDFE}
+.bulkopen svg{flex:0 0 auto}
+.bulksheet{max-width:660px;max-height:calc(100vh - 16px);overflow-y:auto}
+.bulk-tip{margin:0 0 10px;font-size:11.5px;color:var(--ink3);line-height:1.7}
+.bulk-tip code{
+  display:inline-block;padding:0 5px;border-radius:5px;background:#F3F8FB;
+  font-family:inherit;font-size:11.5px;color:var(--ink2);
+}
+#bulkText{
+  width:100%;height:clamp(150px,26vh,250px);resize:vertical;outline:none;transition:.18s;
+  border:1px solid var(--line);border-radius:13px;padding:11px 13px;
+  background:#FBFDFE;color:var(--ink);font-family:inherit;font-size:13px;line-height:1.75;
+}
+#bulkText:focus{border-color:#B7D3E8;background:#fff;box-shadow:0 0 0 3px rgba(134,174,219,.13)}
+#bulkText::placeholder{color:#BCC9D4}
+.bulk-prev{margin-top:10px;max-height:126px;overflow-y:auto;font-size:12px;line-height:1.6;color:var(--ink3)}
+.bulk-prev:empty{display:none}
+.bp-row{display:flex;align-items:center;gap:7px;padding:3px 1px;border-bottom:1px dashed #EFF4F7}
+.bp-row:last-child{border-bottom:0}
+.bp-dot{width:6px;height:6px;border-radius:50%;flex:0 0 auto}
+.bp-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)}
+.bp-m{flex:0 0 auto;color:var(--ink3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.bp-row.bp-bad .bp-n,.bp-row.bp-bad .bp-m{color:#C4746A}
+.bp-sum{font-size:11.5px;color:var(--ink3);padding:4px 1px 0}
 
 @media (max-width:768px){
   .tl-wrap{--hr:52px;height:min(58vh,520px)}
@@ -1158,6 +1191,10 @@ body.dt-dragging .dtodo{cursor:grabbing}
         </button>
       </div>
       <p class="qa-tip" id="qaTip">按关键词自动分到「教学 / 科研 / 行政 / 家庭生活」，分错了点标签改一下。</p>
+      <button type="button" class="bulkopen" id="btnBulk">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>
+        批量录入（一次贴一串）
+      </button>
     </div>
 
     <div class="dock-card" id="cardTodo">
@@ -1234,6 +1271,21 @@ body.dt-dragging .dtodo{cursor:grabbing}
   <div class="sh-acts">
     <button id="shDel" class="btn ghost danger">删除</button>
     <button id="shSave" class="btn primary">保存</button>
+  </div>
+</div>
+
+<div id="bulkSheet" class="sheet bulksheet hidden" role="dialog" aria-modal="true" aria-label="批量录入">
+  <div class="sh-head">
+    <b>批量录入</b>
+    <button class="sh-x" id="bulkClose" aria-label="关闭">&times;</button>
+  </div>
+  <p class="bulk-tip">一行一条：<code>内容 | 分类 | 日期</code>。分类和日期都能省 —— 分类按关键词自动判断，日期不写就是今天。
+    日期认 <code>2026-11-30</code>、<code>2026年11月30日</code>、<code>2026年11月</code>（算到月底）、<code>2027年1月初</code>（算到 5 号）。</p>
+  <textarea id="bulkText" spellcheck="false" placeholder="启动毕业论文（设计）工作 | 教学 | 2026-11-30&#10;完成选题工作，提交毕业论文（设计）工作计划 | 教学 | 2026-12-31&#10;毕业论文（设计）选题检查 | 教学 | 2026-12-28"></textarea>
+  <div class="bulk-prev" id="bulkPrev"></div>
+  <div class="sh-acts">
+    <button id="bulkClear" class="btn ghost">清空</button>
+    <button id="bulkSave" class="btn primary">全部录入</button>
   </div>
 </div>
 
@@ -2338,6 +2390,198 @@ function closeSheet(){
   TL.edit = null;
 }
 
+/* ---------- 批量录入 ----------
+   一行一条，格式「内容 | 分类 | 日期」，分类和日期可省。
+   日期认 2026-11-30 / 2026年11月30日 / 2026年11月（月底）/ 2027年1月初（5 号）/
+   3月30日前（去掉"前"）/ 3月30日（当年）。 */
+var BULK = { rows: [] };
+
+function monthEnd(y, mo){ return new Date(y, mo, 0).getDate(); }
+
+function bulkDateOf(raw){
+  var t = String(raw == null ? '' : raw).replace(/\s+/g, '');
+  if(!t) return '';
+  t = t.replace(/^(截止|截至|时间)[:：]?/, '').replace(/(之前|以前|截止|为止|前)$/, '');
+  var m, y, mo, da;
+
+  m = t.match(/^(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+  if(m){ y = +m[1]; mo = +m[2]; da = +m[3];
+    return (mo >= 1 && mo <= 12) ? y + '-' + pad(mo) + '-' + pad(da) : ''; }
+
+  m = t.match(/^(20\d{2})年(\d{1,2})月(\d{1,2})日?$/);
+  if(m){ y = +m[1]; mo = +m[2]; da = +m[3];
+    return (mo >= 1 && mo <= 12) ? y + '-' + pad(mo) + '-' + pad(da) : ''; }
+
+  m = t.match(/^(20\d{2})[-\/.](\d{1,2})$/);
+  if(m){ y = +m[1]; mo = +m[2];
+    return (mo >= 1 && mo <= 12) ? y + '-' + pad(mo) + '-' + pad(monthEnd(y, mo)) : ''; }
+
+  /* 2026年11月 / 2026年11月初 / 2026年11月中旬 / 2026年11月底 */
+  m = t.match(/^(20\d{2})年(\d{1,2})月(初|上旬|中旬|下旬|底|末)?$/);
+  if(m){
+    y = +m[1]; mo = +m[2];
+    if(mo < 1 || mo > 12) return '';
+    var seg = m[3] || '';
+    da = (seg === '初' || seg === '上旬') ? 5 : (seg === '中旬' ? 15 : monthEnd(y, mo));
+    return y + '-' + pad(mo) + '-' + pad(da);
+  }
+
+  m = t.match(/^(\d{1,2})月(\d{1,2})日?$/);
+  if(m){
+    mo = +m[1]; da = +m[2]; y = new Date().getFullYear();
+    return (mo >= 1 && mo <= 12) ? y + '-' + pad(mo) + '-' + pad(da) : '';
+  }
+
+  var rel = { '今天':0, '今日':0, '明天':1, '明日':1, '后天':2 };
+  if(rel.hasOwnProperty(t)) return shiftDay(todayKey(), rel[t]);
+
+  return '';
+}
+
+/* 没有 | 分隔时，从行尾剥一个日期（和它前面的"前/之前"） */
+var BULK_TAIL = /(20\d{2}[-\/.]\d{1,2}(?:[-\/.]\d{1,2})?|20\d{2}年\d{1,2}月(?:\d{1,2}日|初|上旬|中旬|下旬|底|末)?|\d{1,2}月\d{1,2}日)\s*(?:之前|以前|前)?\s*$/;
+
+function bulkParse(text){
+  var out = [];
+  String(text || '').split(/\r?\n/).forEach(function(line){
+    var s = String(line || '').replace(/\u3000/g, ' ').trim();
+    if(!s) return;
+    if(s.charAt(0) === '#' || s.charAt(0) === '—' || s.charAt(0) === '-') return;
+
+    var name = '', cat = '', date = '', bad = '';
+    var parts = s.split(/[|｜\t]+/).map(function(x){ return x.trim(); })
+                 .filter(function(x){ return x !== ''; });
+
+    if(parts.length > 1){
+      name = parts[0];
+      for(var i = 1; i < parts.length; i++){
+        var p = parts[i];
+        if(!cat && CATS.indexOf(p) !== -1){ cat = p; continue; }
+        if(!date){ var d1 = bulkDateOf(p); if(d1){ date = d1; continue; } }
+        /* 认不出的列（例如"负责单位"）丢掉 */
+      }
+    }else{
+      name = s;
+      var mt = name.match(BULK_TAIL);
+      if(mt){
+        var d2 = bulkDateOf(mt[1]);
+        if(d2){ date = d2; name = name.slice(0, mt.index).trim(); }
+      }
+      var mc = name.match(/(教学|科研|行政|家庭生活)\s*$/);
+      if(mc){ cat = mc[1]; name = name.slice(0, mc.index).trim(); }
+    }
+
+    name = name.replace(/[；;、,，\s]+$/, '').trim();
+    if(!name){ bad = '没读出内容，这一行跳过'; }
+
+    out.push({
+      name: name,
+      cat: cat || (name ? (classify(name) || '行政') : ''),
+      autoCat: !cat,
+      date: date || todayKey(),
+      autoDate: !date,
+      bad: bad
+    });
+  });
+  return out;
+}
+
+function renderBulkPreview(){
+  var ta = el('bulkText');
+  BULK.rows = bulkParse(ta ? ta.value : '');
+  var box = el('bulkPrev');
+  if(!box) return;
+  var ok = 0, i;
+  for(i = 0; i < BULK.rows.length; i++){ if(!BULK.rows[i].bad) ok++; }
+  var h = BULK.rows.slice(0, 40).map(function(r){
+    var col = CAT_COLOR[r.cat] || '#B7C6D2';
+    return '<div class="bp-row' + (r.bad ? ' bp-bad' : '') + '">'
+      + '<i class="bp-dot" style="background:' + (r.bad ? '#C4746A' : col) + '"></i>'
+      + '<span class="bp-n">' + esc(r.name) + '</span>'
+      + '<span class="bp-m">' + (r.bad ? '跳过' : (esc(r.cat) + ' · ' + esc(r.date.slice(5)))) + '</span>'
+      + '</div>';
+  }).join('');
+  if(BULK.rows.length > 40){
+    h += '<div class="bp-sum">… 还有 ' + (BULK.rows.length - 40) + ' 条没显示</div>';
+  }
+  if(ok){
+    h += '<div class="bp-sum">共 ' + ok + ' 条待录入' + (BULK.rows.length - ok ? ('，' + (BULK.rows.length - ok) + ' 条跳过') : '') + '</div>';
+  }
+  box.innerHTML = h;
+  el('bulkSave').textContent = ok ? ('全部录入（' + ok + ' 条）') : '全部录入';
+  el('bulkSave').disabled = !ok;
+}
+
+function openBulk(){
+  el('blkMask').classList.remove('hidden');
+  el('bulkSheet').classList.remove('hidden');
+  renderBulkPreview();
+  setTimeout(function(){ try{ el('bulkText').focus(); }catch(e){} }, 140);
+}
+
+function closeBulk(){
+  el('blkMask').classList.add('hidden');
+  el('bulkSheet').classList.add('hidden');
+}
+
+function bulkAdd(){
+  var rows = BULK.rows.filter(function(r){ return !r.bad && r.name; });
+  if(!rows.length){ toast('先贴几条进来吧'); return; }
+
+  var today = todayKey();
+  for(var i = 0; i < rows.length; i++){
+    if(!rows[i].cat) rows[i].cat = classify(rows[i].name) || '行政';
+  }
+
+  if(!db){
+    var base = Date.now();
+    rows.forEach(function(r, k){
+      state.tasks.push({
+        record_id: 'local_' + (base + k),
+        '任务内容': r.name, '分类': r.cat, '状态': '待办',
+        '累计用时': 0, '计划日期': r.date, '创建时间': today
+      });
+    });
+    cacheSave();
+    closeBulk();
+    el('bulkText').value = '';
+    BULK.rows = [];
+    renderBulkPreview();
+    switchPane('secList', true);
+    renderAll();
+    toast('已录入 ' + rows.length + ' 条（本机模式）');
+    return;
+  }
+
+  setSync('syncing', '同步中');
+  var chain = Promise.resolve();
+  rows.forEach(function(r){
+    chain = chain.then(function(){
+      return apiAddTask({
+        '任务内容': { text: r.name },
+        '分类': { select: r.cat },
+        '状态': { select: '待办' },
+        '累计用时': { number: 0 },
+        '计划日期': { date: r.date },
+        '创建时间': { date: today }
+      });
+    });
+  });
+  chain.then(function(){
+    closeBulk();
+    el('bulkText').value = '';
+    BULK.rows = [];
+    renderBulkPreview();
+    toast('已录入 ' + rows.length + ' 条');
+    switchPane('secList', true);
+    return reloadData();
+  }).catch(function(err){
+    console.error('[workspace] 批量录入失败:', err);
+    setSync('sync', '已同步');
+    toast('批量录入没走完，检查网络后再试');
+  });
+}
+
 /* ---------- 落库 ---------- */
 function recalcTotals(title){
   if(!title) return;
@@ -2875,7 +3119,7 @@ function bindTimeline(){
   cv.addEventListener('pointerup', tlUp);
   cv.addEventListener('pointercancel', tlCancel);
 
-  el('blkMask').addEventListener('click', closeSheet);
+  el('blkMask').addEventListener('click', function(){ closeSheet(); closeBulk(); });
   el('shClose').addEventListener('click', closeSheet);
   el('shSave').addEventListener('click', saveSheet);
   el('shDel').addEventListener('click', deleteBlock);
@@ -4292,6 +4536,21 @@ function bindEvents(){
   });
   el('qaInput').addEventListener('keydown', function(e){
     if(e.key === 'Enter' || e.keyCode === 13){ e.preventDefault(); doAdd(); }
+  });
+
+  /* 批量录入：贴一串 → 预览 → 一次落库 */
+  el('btnBulk').addEventListener('click', openBulk);
+  el('bulkClose').addEventListener('click', closeBulk);
+  el('bulkClear').addEventListener('click', function(){
+    el('bulkText').value = '';
+    BULK.rows = [];
+    renderBulkPreview();
+    el('bulkText').focus();
+  });
+  el('bulkSave').addEventListener('click', bulkAdd);
+  el('bulkText').addEventListener('input', renderBulkPreview);
+  el('bulkText').addEventListener('keydown', function(e){
+    if(e.key === 'Escape' || e.keyCode === 27){ e.preventDefault(); closeBulk(); }
   });
   el('catPick').addEventListener('click', function(e){
     var node = e.target;
