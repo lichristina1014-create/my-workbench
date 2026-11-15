@@ -992,6 +992,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
     <div class="sec-head">
       <h2>今天要处理</h2>
       <span class="sec-hint" id="todayHint"></span>
+      <span class="sec-hint"><b>按住每行最左边的六个点上下拖</b>，排出先做哪个</span>
     </div>
 
     <div id="overdueBlock" class="block hidden">
@@ -1836,8 +1837,8 @@ function taskRowHTML(tk, showDel, showDate){
   }
   if(showDel) acts += '<button class="tbtn del" data-act="del" title="删除">'+SVG_TRASH+'</button>';
 
-  /* 只有「全部任务」里能拖排序（今天要处理那儿拖动已经有别的用途：拖进时间轴） */
-  var grip = (showDel && !done)
+  /* 未完成的行都能拖排序（「今天要处理」「全部任务」共用；已完成的不给） */
+  var grip = !done
     ? '<button type="button" class="ordgrip" data-act="ord" tabindex="-1" aria-label="拖动排序"'
       + ' title="按住这六个点往上/往下拖，把它放到你想先做的位置">'
       + '<svg viewBox="0 0 8 14" width="8" height="14" aria-hidden="true"><g fill="currentColor">'
@@ -4741,6 +4742,14 @@ function bindEvents(){
   el('allList').addEventListener('click', function(e){ onListClick(e, true); });
   /* 拖动排序：行是动态重建的，所以在容器上做委托 */
   el('allList').addEventListener('pointerdown', function(e){
+    var g = e.target.closest ? e.target.closest('.ordgrip') : null;
+    if(g) ordDown(e, g);
+  });
+  el('todayList').addEventListener('pointerdown', function(e){
+    var g = e.target.closest ? e.target.closest('.ordgrip') : null;
+    if(g) ordDown(e, g);
+  });
+  el('overdueList').addEventListener('pointerdown', function(e){
     var g = e.target.closest ? e.target.closest('.ordgrip') : null;
     if(g) ordDown(e, g);
   });
