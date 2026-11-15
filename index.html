@@ -137,6 +137,27 @@ input,select,textarea{font-family:inherit;font-size:16px}
   border-left:3px solid #E9EFF3;
 }
 .task:hover{box-shadow:var(--shadow);border-color:#E1EAEF}
+
+/* 拖动排序的把手：看着细，实际点按区域放大到约 19×46，手指也抓得住 */
+.ordgrip{
+  position:relative;flex:0 0 10px;width:10px;height:26px;padding:0;border:0;background:transparent;
+  margin:0 -4px 0 -2px;display:flex;align-items:center;justify-content:center;
+  color:#BDCDD9;cursor:grab;touch-action:none;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+}
+.ordgrip::before{content:'';position:absolute;left:-5px;right:-4px;top:-10px;bottom:-10px}
+.ordgrip:hover{color:#8CA0B0}
+.ordgrip:active{cursor:grabbing;color:#7C93A5}
+.task.dragging{
+  position:relative;z-index:6;background:#fff;border-color:#CBDDEA;
+  box-shadow:0 10px 26px rgba(46,59,71,.18);cursor:grabbing;
+}
+body.ord-dragging{cursor:grabbing}
+body.ord-dragging .task{transition:none}
+/* 手机上横向更紧，把手用负边距把占的宽度还回去，免得标题多折一行 */
+@media (max-width:768px){
+  .ordgrip{flex:0 0 8px;width:8px;margin:0 -5px 0 -3px}
+}
 .task[data-cat="教学"]{border-left-color:var(--teach)}
 .task[data-cat="科研"]{border-left-color:var(--res)}
 .task[data-cat="行政"]{border-left-color:var(--adm)}
@@ -216,6 +237,11 @@ button.tag-do:hover{background:#E4F1FA;border-color:#C6E0F2;color:#3B6893}
 .fb.f-fam.on{background:var(--famBg);border-color:#C9E9DC;color:#3E9585}
 .fsp{flex:1}
 .fsel{height:32px;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--ink2);padding:0 8px;font-size:13px}
+.freset{
+  height:32px;padding:0 12px;border-radius:20px;border:1px solid var(--line);background:#fff;
+  color:var(--ink3);font-size:13px;font-family:inherit;cursor:pointer;transition:.16s;white-space:nowrap;
+}
+.freset:hover{color:var(--ink2);border-color:#CBDDEA;background:#FBFDFE}
 
 /* ---------- 统计 ---------- */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
@@ -1093,7 +1119,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
   <section class="sec pane" id="secList">
     <div class="sec-head">
       <h2>全部任务</h2>
-      <span class="sec-hint">点「开始」计时，结束不等于完成，时间会累计</span>
+      <span class="sec-hint">点「开始」计时，结束不等于完成；<b>按住每行最左边的六个点上下拖</b>，就能排出先做哪个</span>
     </div>
 
     <p class="list-scope hidden" id="listScope"></p>
@@ -1112,6 +1138,8 @@ body.dt-dragging .dtodo{cursor:grabbing}
         <option value="all">全部状态</option>
         <option value="done">已完成</option>
       </select>
+      <button type="button" class="freset hidden" id="ordReset"
+        title="清掉你手动拖出来的顺序，回到按计划日期排">按日期重排</button>
     </div>
 
     <div id="allList" class="list"></div>
@@ -1649,7 +1677,15 @@ function bucketToday(){
     if(bv !== av) return bv - av;
     return String(a['创建时间'] || '').localeCompare(String(b['创建时间'] || ''));
   };
-  overdue.sort(byTime); todos.sort(byTime); doneToday.sort(byTime);
+  /* 在「全部任务」里拖出来的先后，这里也照它排；没拖过就还是按用时/添加时间 */
+  var byRank = function(a,b){
+    var ao = ordOf(a), bo = ordOf(b);
+    if(ao === null && bo === null) return byTime(a, b);
+    if(ao === null) return -1;
+    if(bo === null) return 1;
+    return ao - bo;
+  };
+  overdue.sort(byRank); todos.sort(byRank); doneToday.sort(byTime);
   return { overdue: overdue, todos: todos, doneToday: doneToday };
 }
 function sessionsOfDay(key){
@@ -1800,7 +1836,19 @@ function taskRowHTML(tk, showDel, showDate){
   }
   if(showDel) acts += '<button class="tbtn del" data-act="del" title="删除">'+SVG_TRASH+'</button>';
 
+  /* 只有「全部任务」里能拖排序（今天要处理那儿拖动已经有别的用途：拖进时间轴） */
+  var grip = (showDel && !done)
+    ? '<button type="button" class="ordgrip" data-act="ord" tabindex="-1" aria-label="拖动排序"'
+      + ' title="按住这六个点往上/往下拖，把它放到你想先做的位置">'
+      + '<svg viewBox="0 0 8 14" width="8" height="14" aria-hidden="true"><g fill="currentColor">'
+      + '<circle cx="2" cy="2" r="1.3"/><circle cx="6" cy="2" r="1.3"/>'
+      + '<circle cx="2" cy="7" r="1.3"/><circle cx="6" cy="7" r="1.3"/>'
+      + '<circle cx="2" cy="12" r="1.3"/><circle cx="6" cy="12" r="1.3"/>'
+      + '</g></svg></button>'
+    : '';
+
   return '<div class="task'+(done ? ' done' : '')+(running ? ' running' : '')+'" data-id="'+esc(rid)+'" data-cat="'+esc(cat)+'">'
+    + grip
     + '<button class="chk" data-act="toggle" aria-label="标记完成">'+SVG_CHECK+'</button>'
     + '<div class="tk-main"><div class="tk-title">'+esc(taskTitle(tk))+'</div><div class="tk-meta">'+meta+'</div></div>'
     + '<div class="tk-acts">'+acts+'</div></div>';
@@ -1926,6 +1974,125 @@ function setCatFilter(cat){
   renderRailCats();
   renderListScope();
 }
+/* ---------- 手动排序（自己拖出来的先后，不用先判断重要/紧急） ---------- */
+var K_ORDER = 'wb_lifehub_order';
+var ORDM = {};        /* { record_id: 序号 }，只在「全部任务」里用 */
+var ORDRAG = null;
+
+function loadOrder(){
+  var m = readLSJSON(K_ORDER, {});
+  ORDM = (m && typeof m === 'object') ? m : {};
+}
+function ordOf(tk){
+  var v = ORDM[String(tk.record_id)];
+  return (typeof v === 'number' && isFinite(v)) ? v : null;
+}
+function saveOrder(){ writeLS(K_ORDER, JSON.stringify(ORDM)); }
+
+/* 没排过的（刚加进来的）浮到最上面等你安排，排过的按你的顺序 */
+function listCmp(a, b){
+  var ao = ordOf(a), bo = ordOf(b);
+  if(ao === null && bo === null){
+    var ap = dateKey(a['计划日期']) || '9999', bp = dateKey(b['计划日期']) || '9999';
+    if(ap !== bp) return ap < bp ? -1 : 1;
+    return (Number(b['累计用时']) || 0) - (Number(a['累计用时']) || 0);
+  }
+  if(ao === null) return -1;
+  if(bo === null) return 1;
+  return ao - bo;
+}
+function taskCmp(a, b){
+  var ad = isDone(a) ? 1 : 0, bd = isDone(b) ? 1 : 0;
+  if(ad !== bd) return ad - bd;
+  return listCmp(a, b);
+}
+
+/* 把拖完的先后写回全库：只在可见的未完成之间换位，被筛选藏起来的那些保持原位不变 */
+function persistOrder(box){
+  var vis = Array.prototype.slice.call(box.querySelectorAll('.task')).filter(function(r){
+    return !r.classList.contains('done');
+  }).map(function(r){ return r.getAttribute('data-id'); });
+  if(!vis.length) return false;
+
+  var all = state.tasks.filter(function(tk){ return !isDone(tk); }).sort(listCmp)
+    .map(function(tk){ return String(tk.record_id); });
+  var visSet = {};
+  vis.forEach(function(id){ visSet[id] = 1; });
+
+  var filled = 0;
+  var out = all.map(function(id){ if(visSet[id]){ filled++; return null; } return id; });
+  if(filled !== vis.length) return false;   /* 对不上就先不动，绝不乱写 */
+  var k = 0;
+  for(var i = 0; i < out.length; i++){ if(out[i] === null) out[i] = vis[k++]; }
+
+  var next = {};
+  out.forEach(function(id, i){ next[id] = i; });
+  ORDM = next;
+  saveOrder();
+  return true;
+}
+
+function ordDown(ev, grip){
+  if(ev.button != null && ev.button !== 0) return;
+  var row = grip.closest('.task');
+  if(!row || !row.parentNode) return;
+  ev.preventDefault();
+  ORDRAG = { row: row, box: row.parentNode, y0: ev.clientY, moved: false };
+  row.classList.add('dragging');
+  document.body.classList.add('ord-dragging');
+  document.addEventListener('pointermove', ordMove, { passive: false });
+  document.addEventListener('pointerup', ordUp);
+  document.addEventListener('pointercancel', ordUp);
+}
+
+function ordMove(ev){
+  var d = ORDRAG; if(!d) return;
+  ev.preventDefault();
+  if(Math.abs(ev.clientY - d.y0) > 3) d.moved = true;
+  if(!d.moved) return;
+  var rows = Array.prototype.slice.call(d.box.children).filter(function(x){
+    return x.classList && x.classList.contains('task') && x !== d.row;
+  });
+  var target = null;
+  for(var i = 0; i < rows.length; i++){
+    var r = rows[i].getBoundingClientRect();
+    if(ev.clientY < r.top + r.height / 2){ target = rows[i]; break; }
+  }
+  if(target){
+    if(d.row.nextElementSibling !== target) d.box.insertBefore(d.row, target);
+  }else if(d.box.lastElementChild !== d.row){
+    d.box.appendChild(d.row);
+  }
+  /* 拖到屏幕上下边缘就自动滚，十几条也拖得动 */
+  if(ev.clientY < 90) window.scrollBy(0, -14);
+  else if(ev.clientY > window.innerHeight - 90) window.scrollBy(0, 14);
+}
+
+function ordUp(){
+  var d = ORDRAG; if(!d) return;
+  ORDRAG = null;
+  document.removeEventListener('pointermove', ordMove);
+  document.removeEventListener('pointerup', ordUp);
+  document.removeEventListener('pointercancel', ordUp);
+  d.row.classList.remove('dragging');
+  document.body.classList.remove('ord-dragging');
+  if(!d.moved) return;
+  if(persistOrder(d.box)){
+    renderAll();
+    toast('顺序记下了，下次打开还是这个次序');
+  }else{
+    renderAll();
+    toast('这条没能挪动，刷新一下再试');
+  }
+}
+
+function resetOrder(){
+  ORDM = {};
+  saveOrder();
+  renderAll();
+  toast('顺序清掉了，回到按日期排');
+}
+
 function renderAllList(){
   var list = state.tasks.filter(function(tk){
     if(state.filterCat !== '全部' && (tk['分类'] || '') !== state.filterCat) return false;
@@ -1933,13 +2100,12 @@ function renderAllList(){
     if(state.filterStatus === 'done' && !isDone(tk)) return false;
     return true;
   });
-  list.sort(function(a, b){
-    var ad = isDone(a) ? 1 : 0, bd = isDone(b) ? 1 : 0;
-    if(ad !== bd) return ad - bd;
-    var ap = dateKey(a['计划日期']) || '9999', bp = dateKey(b['计划日期']) || '9999';
-    if(ap !== bp) return ap < bp ? -1 : 1;
-    return (Number(b['累计用时']) || 0) - (Number(a['累计用时']) || 0);
-  });
+  list.sort(taskCmp);
+  var zb = el('ordReset');
+  if(zb){
+    var anyOrd = state.tasks.some(function(tk){ return ordOf(tk) !== null; });
+    zb.classList.toggle('hidden', !anyOrd);
+  }
   el('allList').innerHTML = list.length
     ? list.map(function(tk){ return taskRowHTML(tk, true, true); }).join('')
     : emptyHTML(state.filterCat === '全部'
@@ -4573,6 +4739,12 @@ function bindEvents(){
   el('overdueList').addEventListener('click', function(e){ onListClick(e, false); });
   el('doneList').addEventListener('click', function(e){ onListClick(e, false); });
   el('allList').addEventListener('click', function(e){ onListClick(e, true); });
+  /* 拖动排序：行是动态重建的，所以在容器上做委托 */
+  el('allList').addEventListener('pointerdown', function(e){
+    var g = e.target.closest ? e.target.closest('.ordgrip') : null;
+    if(g) ordDown(e, g);
+  });
+  el('ordReset').addEventListener('click', resetOrder);
   el('btnCarryAll').addEventListener('click', carryAllOverdue);
 
   el('catFilter').addEventListener('click', function(e){
@@ -4677,6 +4849,7 @@ function init(){
   if(saved && saved.recordId && saved.startedAt) state.running = saved;
   if(state.draftCat === '') state.draftCat = readLS(K_CAT) || '';
   loadDraft();
+  loadOrder();
 
   if(!db){
     state.offline = true;
