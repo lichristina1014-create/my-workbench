@@ -712,7 +712,16 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 .list .flash{animation:rowFlash 1.3s ease 2;border-radius:12px}
 
 /* 右栏：今日待办（可拖到时间轴） */
-.dtodo-list{display:flex;flex-direction:column;gap:6px;max-height:216px;overflow-y:auto}.dtodo{
+.dtodo-list{display:flex;flex-direction:column;gap:6px;max-height:216px;overflow-y:auto}
+@media (max-width:1023px){.dtodo-list{max-height:290px}}
+/* 桌面右栏：补记卡片删掉后，把腾出来的高度给「今日待办」列表，能多看几条 */
+@media (min-width:1024px){
+  .dock .dock-card{flex:0 0 auto}
+  #cardTodo{display:flex;flex-direction:column;flex:1 1 auto;min-height:230px}
+  #cardTodo .dtodo-list{flex:1 1 auto;max-height:none;min-height:0}
+  #cardTodo .dock-hint{flex:0 0 auto}
+}
+.dtodo{
   display:flex;align-items:center;gap:8px;padding:8px 7px 8px 9px;border-radius:11px;
   border:1px solid #E9EFF3;background:#FCFDFE;cursor:grab;touch-action:none;
   font-size:12.5px;color:var(--ink);min-width:0;
@@ -741,15 +750,6 @@ body.dt-dragging{cursor:grabbing}
 body.dt-dragging .dtodo{cursor:grabbing}
 .tl-ghost.dt-land{border-color:#86AEDB;background:rgba(230,241,251,.96);color:#3F6E9C}
 
-/* 右栏：补记快捷 */
-.log-quick{display:flex;flex-wrap:wrap;gap:6px}
-.log-quick .lq{
-  flex:1 1 calc(50% - 3px);min-width:0;height:36px;border-radius:10px;cursor:pointer;
-  border:1px solid #DFECF5;background:#F8FCFE;color:#5E8CB6;font-size:12.5px;font-weight:500;
-  transition:.16s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px;
-}
-.log-quick .lq:hover{background:#EFF8FD;border-color:#C9E0F0;box-shadow:var(--shadow)}
-.log-quick .lq:last-child{flex:1 1 100%;color:var(--ink2);border-color:#E8EEF2;background:#fff}
 /* 右栏：今日小结 */
 .mini-sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
 .mini-sum div{background:linear-gradient(160deg,#F8FBFD,#FBFDFE);border:1px solid #EDF3F7;
@@ -1237,16 +1237,6 @@ body.dt-dragging .dtodo{cursor:grabbing}
       <p class="dock-hint">做完的那条<b>按住右边拖进时间轴</b>，松手就记成一段时间，任务同时标记完成。</p>
     </div>
 
-    <div class="dock-card" id="cardLog">
-      <h3><i></i>补记已经做过的<span>不新建任务</span></h3>
-      <div class="log-quick">
-        <button class="lq" data-quick="30">刚才 30 分钟</button>
-        <button class="lq" data-quick="60">刚才 1 小时</button>
-        <button class="lq" data-quick="0">自己挑时间</button>
-      </div>
-      <p class="dock-hint">写在时间轴上就是一条计时记录，统计和时间轴会一起更新。</p>
-    </div>
-
     <div class="dock-card" id="cardToday">
       <h3><i></i>今日小结</h3>
       <div class="mini-sum">
@@ -1356,7 +1346,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
   <div class="dgroup">
     <h4>说明</h4>
     <div class="dnote">
-      · 左边是功能页签，中间看内容，<b>右边录入</b>——加待办、补记已经做过的都在右边一次写完。<br>
+      · 左边是功能页签，中间看内容，<b>右边加待办</b>。要补记已经做过的，直接去「时间轴」：<b>点一下空白处记一件小事，按住往下拖出一段</b>，比在别处绕一圈快。<br>
       · 「今天要处理」置顶显示逾期与今日待办，昨天没做完的会自动滚到今天。<b>「全部任务」里每条标出什么时候该做</b>——日子还没到标「12-31 截止」，到了或过了标「今天」，确实过了原定日子的另标一个红色「逾期 N 天」。<br>
       · 计时：点「开始」开始计时，点「结束计时」把这一段的时长累加到任务上；<b>结束不等于完成</b>，下次可以接着计时。<br>
       · 勾选圆圈才算完成，会自动记录完成日期。<br>
@@ -4682,23 +4672,6 @@ function bindEvents(){
   el('fabAdd').addEventListener('click', openDock);
   el('dockMask').addEventListener('click', closeDock);
   el('dockGrip').addEventListener('click', closeDock);
-
-  /* 右栏补记快捷入口 */
-  document.querySelectorAll('#cardLog .lq').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var mins = Number(btn.getAttribute('data-quick')) || 0;
-      var now = new Date();
-      var endM = tlSnap(now.getHours() * 60 + now.getMinutes());
-      var startM = mins ? tlSnap(endM - mins) : Math.max(0, endM - 30);
-      if(endM <= startM) endM = Math.min(1440, startM + 30);
-      state.timelineDay = todayKey();
-      TL.scrolledFor = null;
-      renderTimeline();
-      switchPane('secTimeline');
-      if(window.innerWidth < 1024) closeDock();
-      openSheet({ id: null, name: '', cat: '', s: startM, e: endM });
-    });
-  });
 
   el('btnVoice').addEventListener('click', toggleVoice);
   el('btnAdd').addEventListener('click', doAdd);
