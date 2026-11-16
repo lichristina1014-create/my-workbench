@@ -172,7 +172,7 @@ body.ord-dragging .task{transition:none}
 .task.done .chk{background:var(--ok);border-color:var(--ok);color:#fff}
 .chk svg{width:14px;height:14px}
 .tk-main{flex:1;min-width:0}
-.tk-title{font-size:14.5px;line-height:1.45;word-break:break-word}
+.tk-title{font-size:14.5px;line-height:1.45;word-break:break-word;text-wrap:pretty}
 .task.done .tk-title{color:var(--ink3);text-decoration:line-through;text-decoration-color:#CBD6DE}
 .tk-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;font-size:12px;color:var(--ink3)}
 .chip{padding:1px 8px;border-radius:20px;font-size:11.5px;line-height:18px}
@@ -214,9 +214,10 @@ button.tag-do:hover{background:#E4F1FA;border-color:#C6E0F2;color:#3B6893}
 }
 .tbtn:hover{border-color:#D5E5F0;color:#4E7CA8;box-shadow:var(--shadow)}
 .tbtn.on{background:#F1FAF7;border-color:#CFEAE4;color:#3E9585;font-weight:600}
-.tbtn.del{width:34px;padding:0;justify-content:center;color:#C4CFD8}
+.tbtn.del{width:34px;padding:0;justify-content:center;color:#9FB2C2}
 .tbtn.del:hover{border-color:#F0DAD6;color:var(--danger);background:#FFF8F7}
 .tbtn svg{width:15px;height:15px}
+.tbtn.del svg{width:16px;height:16px}
 .done-list .task{opacity:.72;border-left-color:#E2EAEF}
 .empty{
   text-align:center;padding:20px 12px;color:var(--ink3);font-size:13px;
@@ -1756,7 +1757,7 @@ function computeStats(){
 
 /* ================= 6. 渲染层（只读 state 写 DOM，渲染函数之间互不调用） ================= */
 var SVG_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
-var SVG_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6.5 7l1 13h9l1-13"/></svg>';
+var SVG_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h17"/><path d="M9.5 6.5V3.8h5v2.7"/><path d="M6 6.5l1.1 13.7h9.8L18 6.5"/></svg>';
 var WD = ['日','一','二','三','四','五','六'];
 
 function setSync(kind, text){
@@ -1784,7 +1785,7 @@ function daysBetween(a, b){
   var d1 = new Date(a+'T00:00:00'), d2 = new Date(b+'T00:00:00');
   return Math.max(0, Math.round((d2 - d1) / 86400000));
 }
-function taskRowHTML(tk, showDel, showDate){
+function taskRowHTML(tk, showDate){
   var cat = tk['分类'] || '';
   var cls = CAT_CLS[cat] || '';
   var done = isDone(tk);
@@ -1825,7 +1826,8 @@ function taskRowHTML(tk, showDel, showDate){
   if(!done){
     acts += '<button class="tbtn'+(running ? ' on' : '')+'" data-act="timer">'+(running ? '计时中' : '开始')+'</button>';
   }
-  if(showDel) acts += '<button class="tbtn del" data-act="del" title="删除">'+SVG_TRASH+'</button>';
+  /* 删除按钮每个列表都给：在「全部任务」里删要跳一次页，太绕 */
+  acts += '<button class="tbtn del" data-act="del" title="删除这条">'+SVG_TRASH+'</button>';
 
   /* 未完成的行都能拖排序（「今天要处理」「全部任务」共用；已完成的不给） */
   var grip = !done
@@ -1853,20 +1855,20 @@ function renderToday(){
   if(b.overdue.length){
     ov.classList.remove('hidden');
     el('overdueCnt').textContent = '· ' + b.overdue.length + ' 项';
-    el('overdueList').innerHTML = b.overdue.map(function(tk){ return taskRowHTML(tk, false); }).join('');
+    el('overdueList').innerHTML = b.overdue.map(function(tk){ return taskRowHTML(tk); }).join('');
   }else{
     ov.classList.add('hidden');
   }
 
   el('todayCnt').textContent = '· ' + b.todos.length + ' 项';
   el('todayList').innerHTML = b.todos.length
-    ? b.todos.map(function(tk){ return taskRowHTML(tk, false); }).join('')
+    ? b.todos.map(function(tk){ return taskRowHTML(tk); }).join('')
     : emptyHTML('今天还没有待办，在上面写一句就会自动归类。');
 
   if(b.doneToday.length){
     dn.classList.remove('hidden');
     el('doneCnt').textContent = '· ' + b.doneToday.length + ' 项';
-    el('doneList').innerHTML = b.doneToday.map(function(tk){ return taskRowHTML(tk, false); }).join('');
+    el('doneList').innerHTML = b.doneToday.map(function(tk){ return taskRowHTML(tk); }).join('');
   }else{
     dn.classList.add('hidden');
   }
@@ -2098,7 +2100,7 @@ function renderAllList(){
     zb.classList.toggle('hidden', !anyOrd);
   }
   el('allList').innerHTML = list.length
-    ? list.map(function(tk){ return taskRowHTML(tk, true, true); }).join('')
+    ? list.map(function(tk){ return taskRowHTML(tk, true); }).join('')
     : emptyHTML(state.filterCat === '全部'
         ? '这个筛选下没有任务。'
         : ('「' + state.filterCat + '」下还没有'
@@ -4503,7 +4505,7 @@ function openDrawer(){
 }
 function closeDrawer(){ el('drawer').classList.remove('open'); el('mask').classList.add('hidden'); }
 
-function onListClick(ev, withDel){
+function onListClick(ev){
   var node = ev.target, act = null, card = null, actNode = null;
   while(node && node !== ev.currentTarget){
     if(node.getAttribute && node.getAttribute('data-act')){ act = node.getAttribute('data-act'); actNode = node; }
@@ -4530,7 +4532,7 @@ function onListClick(ev, withDel){
   }
   else if(act === 'dotFor') dotForTask(tk);
   else if(act === 'timer') startTimer(tk);
-  else if(act === 'del' && withDel) delTask(tk);
+  else if(act === 'del') delTask(tk);
 }
 /* ---------- 左栏页签切换 ---------- */
 function switchPane(id, noScroll){
@@ -4709,10 +4711,10 @@ function bindEvents(){
       node = node.parentNode;
     }
   });
-  el('todayList').addEventListener('click', function(e){ onListClick(e, false); });
-  el('overdueList').addEventListener('click', function(e){ onListClick(e, false); });
-  el('doneList').addEventListener('click', function(e){ onListClick(e, false); });
-  el('allList').addEventListener('click', function(e){ onListClick(e, true); });
+  el('todayList').addEventListener('click', onListClick);
+  el('overdueList').addEventListener('click', onListClick);
+  el('doneList').addEventListener('click', onListClick);
+  el('allList').addEventListener('click', onListClick);
   /* 拖动排序：行是动态重建的，所以在容器上做委托 */
   el('allList').addEventListener('pointerdown', function(e){
     var g = e.target.closest ? e.target.closest('.ordgrip') : null;
