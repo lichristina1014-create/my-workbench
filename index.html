@@ -162,7 +162,6 @@ body.ord-dragging .task{transition:none}
 .task[data-cat="科研"]{border-left-color:var(--res)}
 .task[data-cat="行政"]{border-left-color:var(--adm)}
 .task[data-cat="家庭生活"]{border-left-color:var(--fam)}
-.task.is-overdue{background:linear-gradient(90deg,#FFF8F7,#fff 40%);border-color:#F5DCD8}
 .task.running{background:linear-gradient(90deg,#F2F9F7,#fff 40%);border-color:#CFEAE4;box-shadow:0 0 0 3px rgba(127,197,180,.12)}
 .chk{
   width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1.6px solid #D6E1E8;background:#fff;
@@ -731,8 +730,6 @@ body.altkey .blk,body.altkey .doti{cursor:copy}
 .dtodo:hover{border-color:#D7E6F1;background:#fff;box-shadow:0 1px 4px rgba(46,59,71,.07)}
 .dtodo i{width:6px;height:6px;border-radius:50%;flex:0 0 6px}
 .dtodo .dt-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dtodo .dt-time{font-size:10px;color:#C97A70;flex:0 0 auto;background:#FFF3F1;
-  border-radius:6px;padding:1px 5px}
 .dtodo .dt-done{
   width:22px;height:22px;flex:0 0 22px;border-radius:7px;border:1px solid #E4EDF3;
   background:#fff;color:#BFCBD4;cursor:pointer;padding:0;
@@ -842,7 +839,6 @@ body.dt-dragging .dtodo{cursor:grabbing}
 .mc-plan em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .mc-plan.done{color:#A9B8C4}
 .mc-plan.done em{text-decoration:line-through}
-.mc-plan.over em{color:#C4695F}
 .mc-pn{font-size:9px;color:#4E7CA8;background:#F0F7FC;border-radius:6px;padding:0 4px;
   white-space:nowrap;line-height:1.5;flex:0 1 auto;min-width:0;overflow:hidden;
   font-variant-numeric:tabular-nums;display:inline-flex;align-items:baseline;gap:1px}
@@ -994,14 +990,6 @@ body.dt-dragging .dtodo{cursor:grabbing}
       <h2>今天要处理</h2>
       <span class="sec-hint" id="todayHint"></span>
       <span class="sec-hint"><b>按住每行最左边的六个点上下拖</b>，排出先做哪个</span>
-    </div>
-
-    <div id="overdueBlock" class="block hidden">
-      <div class="block-head">
-        <i class="dot-red"></i>逾期未完成<span class="cnt" id="overdueCnt"></span>
-        <button id="btnCarryAll" class="mini">全部顺延到今天</button>
-      </div>
-      <div id="overdueList" class="list"></div>
     </div>
 
     <div id="todayBlock" class="block">
@@ -1348,7 +1336,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
     <h4>说明</h4>
     <div class="dnote">
       · 左边是功能页签，中间看内容，<b>右边加待办</b>。要补记已经做过的，直接去「时间轴」：<b>点一下空白处记一件小事，按住往下拖出一段</b>，比在别处绕一圈快。<br>
-      · 「今天要处理」置顶显示逾期与今日待办，昨天没做完的会自动滚到今天。<b>「全部任务」里每条标出什么时候该做</b>——日子还没到标「12-31 截止」，到了或过了标「今天」，确实过了原定日子的另标一个红色「逾期 N 天」。<br>
+      · 「今天要处理」置顶显示今天该做的事，<b>昨天没做完的会自动排到今天</b>，不催也不标红。<b>「全部任务」里每条标出什么时候该做</b>——日子还没到标「12-31 截止」，到了就标「今天」。<br>
       · 计时：点「开始」开始计时，点「结束计时」把这一段的时长累加到任务上；<b>结束不等于完成</b>，下次可以接着计时。<br>
       · 勾选圆圈才算完成，会自动记录完成日期。<br>
       · 断网或连接异常时自动切到本机缓存模式，恢复后以云端数据为准。
@@ -1612,11 +1600,14 @@ function apiDeleteTask(rid){ return db.deleteRecord({ databaseId: DATABASE_ID, r
 function apiAddSession(props){ return db.addRecord({ databaseId: 'qgG4Bg18jaBhmBHdvjwNHw', properties: props }); }
 function apiDeleteSession(rid){ return db.deleteRecord({ databaseId: 'qgG4Bg18jaBhmBHdvjwNHw', recordId: rid }); }
 
-/* 自动顺延：把昨天及更早未完成的任务挪到今天；每天最多执行一次 */
+/* 自动顺延：把昨天及更早没做完的任务排到今天（用户口径「当天没完成的自动延到下一天」）。
+   以前用「每天只跑一次」的标记防重复，结果那天先跑了一次空数据（缓存里还没拉到云端的数据），
+   后面拉回来的任务就再也顺不动了，界面上堆一片「逾期 N 天」。
+   现在按需跑：顺过之后就没有 jobs，等于空转，不需要标记也收敛。 */
+var MIGRATING = false;
 function migrateOverdue(){
+  if(MIGRATING) return Promise.resolve(0);
   var today = todayKey();
-  var mark = 'wb_lifehub_migrated_' + today;
-  if(readLS(mark) === '1') return Promise.resolve(0);
 
   var jobs = [];
   state.tasks.forEach(function(tk){
@@ -1624,21 +1615,22 @@ function migrateOverdue(){
     var p = dateKey(tk['计划日期']);
     if(p && p < today) jobs.push(tk);
   });
-  if(!jobs.length){ writeLS(mark, '1'); return Promise.resolve(0); }
+  if(!jobs.length) return Promise.resolve(0);
 
   if(!db){
     jobs.forEach(function(tk){ tk['计划日期'] = today; });
-    writeLS(mark, '1'); cacheSave();
+    cacheSave();
     return Promise.resolve(jobs.length);
   }
+  MIGRATING = true;
   return Promise.all(jobs.map(function(tk){
     return apiUpdateTask(tk.record_id, { '计划日期': { date: today } });
   })).then(function(){
     jobs.forEach(function(tk){ tk['计划日期'] = today; });
     state.suppressUntil = Date.now() + 2500;
-    writeLS(mark, '1');
+    MIGRATING = false;
     return jobs.length;
-  }).catch(function(){ return 0; });
+  }).catch(function(){ MIGRATING = false; return 0; });
 }
 
 /* ================= 5. 计算层（纯计算，不碰 DOM） ================= */
@@ -1654,15 +1646,15 @@ function planTagOf(tk, today, withToday){
 }
 function bucketToday(){
   var today = todayKey();
-  var overdue = [], todos = [], doneToday = [];
+  var todos = [], doneToday = [];
   state.tasks.forEach(function(tk){
     var p = dateKey(tk['计划日期']);
     if(isDone(tk)){
       if(dateKey(tk['完成日期']) === today) doneToday.push(tk);
       return;
     }
-    if(p && p < today) overdue.push(tk);
-    else todos.push(tk);
+    /* 过了日子还没做完的，就当天要做的事顺下来，不标「逾期」——用户要的是「自动延到下一天」 */
+    todos.push(tk);
   });
   var byTime = function(a,b){
     var av = Number(a['累计用时']) || 0, bv = Number(b['累计用时']) || 0;
@@ -1677,8 +1669,8 @@ function bucketToday(){
     if(bo === null) return 1;
     return ao - bo;
   };
-  overdue.sort(byRank); todos.sort(byRank); doneToday.sort(byTime);
-  return { overdue: overdue, todos: todos, doneToday: doneToday };
+  todos.sort(byRank); doneToday.sort(byTime);
+  return { overdue: [], todos: todos, doneToday: doneToday };
 }
 function sessionsOfDay(key){
   var out = [];
@@ -1794,10 +1786,9 @@ function taskRowHTML(tk, showDate){
   var today = todayKey();
   var tags = '';
   if(!done){
-    /* 没到日子的要标出截止日（两个列表都会出现未来的任务）；今天/逾期的只在「全部任务」里标「今天」 */
+    /* 没到日子的要标出截止日（两个列表都会出现未来的任务）；到了或过了的只在「全部任务」里标「今天」。
+       过了日子没做完的不再标「逾期 N 天」——没做完就顺到下一日，不催。 */
     tags += planTagOf(tk, today, !!showDate);
-    var pk = dateKey(tk['计划日期']);
-    if(pk && pk < today) tags += '<span class="tag red">逾期 '+daysBetween(pk, today)+' 天</span>';
   }else{
     var dk = dateKey(tk['完成日期']);
     if(dk) tags += '<span class="tag">'+dk.slice(5)+' 完成</span>';
@@ -1850,15 +1841,7 @@ function emptyHTML(text){ return '<div class="empty">'+esc(text)+'</div>'; }
 
 function renderToday(){
   var b = bucketToday();
-  var ov = el('overdueBlock'), td = el('todayBlock'), dn = el('doneBlock');
-
-  if(b.overdue.length){
-    ov.classList.remove('hidden');
-    el('overdueCnt').textContent = '· ' + b.overdue.length + ' 项';
-    el('overdueList').innerHTML = b.overdue.map(function(tk){ return taskRowHTML(tk); }).join('');
-  }else{
-    ov.classList.add('hidden');
-  }
+  var td = el('todayBlock'), dn = el('doneBlock');
 
   el('todayCnt').textContent = '· ' + b.todos.length + ' 项';
   el('todayList').innerHTML = b.todos.length
@@ -1889,7 +1872,7 @@ function renderDockTodo(){
   var host = el('dtodoList');
   if(!host) return;
   var b = bucketToday();
-  var list = b.overdue.concat(b.todos);
+  var list = b.todos;
   el('dtodoCnt').textContent = list.length ? (list.length + ' 项') : '';
   if(!list.length){
     host.innerHTML = '<div class="dtodo-empty">今天没有待办，上面写一句就会出现在这里</div>';
@@ -1897,12 +1880,10 @@ function renderDockTodo(){
   }
   host.innerHTML = list.map(function(tk){
     var c = tk['分类'] || '';
-    var late = b.overdue.indexOf(tk) !== -1;
     return '<div class="dtodo" data-id="' + esc(String(tk.record_id)) + '"'
       + ' title="' + esc(taskTitle(tk) + ' · 按住可以拖进时间轴') + '">'
       + '<i style="background:' + (CAT_COLOR[c] || '#B7C6D2') + '"></i>'
       + '<span class="dt-name">' + esc(taskTitle(tk)) + '</span>'
-      + (late ? '<span class="dt-time">逾期</span>' : '')
       + '<button class="dt-done" data-act="done" title="标记完成" aria-label="标记完成">'
       + '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"'
       + ' stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>'
@@ -3792,15 +3773,14 @@ function renderMonth(){
       if(a.dots) extra.push('小事 ' + a.dots);
     }
 
-    /* 这一天的安排：空圈＝还没做，实心＝已完成，逾期没做的标题标红 */
+    /* 这一天的安排：空圈＝还没做，实心＝已完成（没做完的会顺到后面的日子，不标红催） */
     var plans = '';
     if(pl.length){
       if(!out){ sumPlan += pl.length; }
       plans = pl.slice(0, maxPlan).map(function(tk){
         var dn = isDone(tk), col = CAT_COLOR[tk['分类']] || '#B7C6D2';
-        var over = !dn && k < t;
         if(!out && dn) sumPlanDone++;
-        return '<span class="mc-plan' + (dn ? ' done' : '') + (over ? ' over' : '') + '">'
+        return '<span class="mc-plan' + (dn ? ' done' : '') + '">'
           + '<i style="' + (dn ? ('background:' + col + ';border-color:' + col) : ('border-color:' + col)) + '"></i>'
           + '<em>' + esc(taskTitle(tk)) + '</em></span>';
       }).join('');
@@ -3943,7 +3923,7 @@ function reloadData(){
   }).then(function(n){
     state.ready = true;
     renderAll();
-    if(n > 0) toast('已自动把 ' + n + ' 项未完成任务顺延到今天');
+    if(n > 0) toast('已把 ' + n + ' 项没做完的排到今天');
   }).catch(function(err){
     console.error('[workspace] 数据加载失败:', err);
     state.offline = true;
@@ -4246,33 +4226,18 @@ function setStatus(tk, done, opts){
   });
   return slot;
 }
+/* 手动「排到今天」：把某条任务挪到今天的清单里（不再有「逾期」这个概念） */
 function carryTask(tk){
   var rid = String(tk.record_id);
   tk['计划日期'] = todayKey();
   renderAll();
-  if(!db || isLocalId(rid)){ cacheSave(); toast('已顺延到今天'); return; }
+  if(!db || isLocalId(rid)){ cacheSave(); toast('已排到今天'); return; }
   var props = {}; props['计划日期'] = { date: todayKey() };
   setSync('syncing', '同步中');
   apiUpdateTask(rid, props).then(function(){
-    toast('已顺延到今天');
+    toast('已排到今天');
     return reloadData();
-  }).catch(function(){ toast('顺延失败，请检查网络'); });
-}
-function carryAllOverdue(){
-  var b = bucketToday();
-  if(!b.overdue.length) return;
-  var today = todayKey();
-  b.overdue.forEach(function(tk){ tk['计划日期'] = today; });
-  renderAll();
-  if(!db){ cacheSave(); toast('已全部顺延到今天'); return; }
-  setSync('syncing', '同步中');
-  Promise.all(b.overdue.filter(function(tk){ return !isLocalId(tk.record_id); }).map(function(tk){
-    var props = {}; props['计划日期'] = { date: today };
-    return apiUpdateTask(tk.record_id, props);
-  })).then(function(){
-    toast('已全部顺延到今天');
-    return reloadData();
-  }).catch(function(){ toast('顺延失败，请检查网络'); });
+  }).catch(function(){ toast('没同步上，请检查网络'); });
 }
 function delTask(tk){
   askConfirm('删除「' + taskTitle(tk) + '」？删除后不能恢复。', function(){
@@ -4712,7 +4677,6 @@ function bindEvents(){
     }
   });
   el('todayList').addEventListener('click', onListClick);
-  el('overdueList').addEventListener('click', onListClick);
   el('doneList').addEventListener('click', onListClick);
   el('allList').addEventListener('click', onListClick);
   /* 拖动排序：行是动态重建的，所以在容器上做委托 */
@@ -4724,12 +4688,7 @@ function bindEvents(){
     var g = e.target.closest ? e.target.closest('.ordgrip') : null;
     if(g) ordDown(e, g);
   });
-  el('overdueList').addEventListener('pointerdown', function(e){
-    var g = e.target.closest ? e.target.closest('.ordgrip') : null;
-    if(g) ordDown(e, g);
-  });
   el('ordReset').addEventListener('click', resetOrder);
-  el('btnCarryAll').addEventListener('click', carryAllOverdue);
 
   el('catFilter').addEventListener('click', function(e){
     var node = e.target;
@@ -4843,7 +4802,7 @@ function init(){
     migrateOverdue().then(function(n){
       renderAll();
       toast(n > 0
-        ? ('本机模式 · 已自动把 ' + n + ' 项没做完的任务顺延到今天')
+        ? ('本机模式 · 已把 ' + n + ' 项没做完的排到今天')
         : '本机模式：数据暂存在这台设备上');
     });
     return;
