@@ -171,7 +171,15 @@ body.ord-dragging .task{transition:none}
 .task.done .chk{background:var(--ok);border-color:var(--ok);color:#fff}
 .chk svg{width:14px;height:14px}
 .tk-main{flex:1;min-width:0}
-.tk-title{font-size:14.5px;line-height:1.45;word-break:break-word;text-wrap:pretty}
+.tk-title{font-size:14.5px;line-height:1.45;word-break:break-word;text-wrap:pretty;cursor:text;
+  border-radius:5px;transition:background .12s,box-shadow .12s}
+/* 任务名可以点着就地改：鼠标移上去给一点提示，点开变输入框 */
+.tk-title:hover{background:#F6FAFD;box-shadow:0 0 0 4px #F6FAFD}
+.tk-title.editing{display:none}
+.tk-edit{width:100%;font-family:inherit;font-size:15px;line-height:1.45;color:var(--ink);
+  padding:2px 6px;margin:-3px -7px;border:1px solid #CFE0EC;border-radius:7px;background:#fff;
+  outline:none;box-shadow:0 0 0 3px rgba(92,147,199,.13)}
+@media (max-width:1023px){.tk-edit{font-size:16px}}
 .task.done .tk-title{color:var(--ink3);text-decoration:line-through;text-decoration-color:#CBD6DE}
 .tk-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;font-size:12px;color:var(--ink3)}
 .chip{padding:1px 8px;border-radius:20px;font-size:11.5px;line-height:18px}
@@ -1834,12 +1842,14 @@ function taskRowHTML(tk, showDate){
   return '<div class="task'+(done ? ' done' : '')+(running ? ' running' : '')+'" data-id="'+esc(rid)+'" data-cat="'+esc(cat)+'">'
     + grip
     + '<button class="chk" data-act="toggle" aria-label="标记完成">'+SVG_CHECK+'</button>'
-    + '<div class="tk-main"><div class="tk-title">'+esc(taskTitle(tk))+'</div><div class="tk-meta">'+meta+'</div></div>'
+    + '<div class="tk-main"><div class="tk-title" data-act="edit" title="点一下就能改内容">'
+    + esc(taskTitle(tk))+'</div><div class="tk-meta">'+meta+'</div></div>'
     + '<div class="tk-acts">'+acts+'</div></div>';
 }
 function emptyHTML(text){ return '<div class="empty">'+esc(text)+'</div>'; }
 
 function renderToday(){
+  commitEditing();
   var b = bucketToday();
   var td = el('todayBlock'), dn = el('doneBlock');
 
@@ -1869,6 +1879,7 @@ function renderToday(){
 
 /* 右栏「今日待办」：可以按住直接拖进时间轴 */
 function renderDockTodo(){
+  commitEditing();
   var host = el('dtodoList');
   if(!host) return;
   var b = bucketToday();
@@ -2068,6 +2079,7 @@ function resetOrder(){
 }
 
 function renderAllList(){
+  commitEditing();
   var list = state.tasks.filter(function(tk){
     if(state.filterCat !== '全部' && (tk['分类'] || '') !== state.filterCat) return false;
     if(state.filterStatus === 'todo' && isDone(tk)) return false;
@@ -3852,6 +3864,7 @@ function renderTimerBar(){
   }
 }
 function renderAll(){
+  commitEditing();
   renderHeaderDate();
   renderSync();
   renderQuickCat();
@@ -4498,6 +4511,61 @@ function onListClick(ev){
   else if(act === 'dotFor') dotForTask(tk);
   else if(act === 'timer') startTimer(tk);
   else if(act === 'del') delTask(tk);
+  else if(act === 'edit') startEditTitle(card, tk);
+}
+
+/* ---------- 点任务名就地改内容 ---------- */
+var EDITING = null;   /* {finish}：当前正在改的那一行 */
+/* 任何要把行节点冲掉的重画，都先把这个改了一半的名字落盘（筛选、同步刷新都会走这里） */
+function commitEditing(){
+  if(!EDITING) return;
+  var f = EDITING.finish;
+  EDITING = null;
+  f(true);
+}
+function startEditTitle(row, tk){
+  if(row.querySelector('.tk-edit')) return;
+  var t = row.querySelector('.tk-title');
+  if(!t) return;
+
+  var inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'tk-edit';
+  inp.value = taskTitle(tk);
+  inp.spellcheck = false;
+  inp.setAttribute('aria-label', '修改任务内容');
+  t.classList.add('editing');
+  t.parentNode.insertBefore(inp, t);
+
+  var shut = false;
+  function finish(save){
+    if(shut) return;
+    shut = true;
+    if(EDITING && EDITING.finish === finish) EDITING = null;
+    var v = (inp.value || '').replace(/\s+/g, ' ').trim();
+    if(inp.parentNode) inp.parentNode.removeChild(inp);
+    t.classList.remove('editing');
+    if(save && v && v !== taskTitle(tk)) renameTask(tk, v);
+  }
+  EDITING = { finish: finish };
+  inp.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); finish(true); }
+    else if(e.key === 'Escape'){ e.preventDefault(); finish(false); }
+  });
+  inp.addEventListener('blur', function(){ finish(true); });
+  setTimeout(function(){ inp.focus(); inp.select(); }, 0);
+}
+
+function renameTask(tk, name){
+  var rid = String(tk.record_id);
+  tk['任务内容'] = name;
+  renderAll();
+  if(!db || isLocalId(rid)){ cacheSave(); toast('内容改好了'); return; }
+  setSync('syncing', '同步中');
+  apiUpdateTask(rid, { '任务内容': { text: name } }).then(function(){
+    toast('内容改好了');
+    return reloadData();
+  }).catch(function(){ toast('内容改了，但没同步上，检查下网络'); });
 }
 /* ---------- 左栏页签切换 ---------- */
 function switchPane(id, noScroll){
