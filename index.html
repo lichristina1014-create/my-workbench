@@ -1422,7 +1422,9 @@ function wallISO(d){
   return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00Z';
 }
 function fmtMin(mins){
-  var m = Math.round(Number(mins)||0);
+  var raw = Number(mins) || 0;
+  var m = Math.round(raw);
+  if(raw > 0 && m <= 0) return '不到 1 分钟';
   if(m<=0) return '0 分';
   if(m<60) return m+' 分';
   var h = Math.floor(m/60), r = m%60;
@@ -1830,7 +1832,9 @@ function taskRowHTML(tk, showDate){
 
   var acts = '';
   if(!done){
-    acts += '<button class="tbtn'+(running ? ' on' : '')+'" data-act="timer">'+(running ? '计时中' : '开始')+'</button>';
+    acts += '<button class="tbtn'+(running ? ' on' : '')+'" data-act="timer"'
+      + ' title="'+(running ? '点一下就结束这一段，记录到时间轴' : '开始计时')+'">'
+      + (running ? '计时中' : '开始')+'</button>';
   }
   /* 删除按钮每个列表都给：在「全部任务」里删要跳一次页，太绕 */
   acts += '<button class="tbtn del" data-act="del" title="删除这条">'+SVG_TRASH+'</button>';
@@ -4071,7 +4075,11 @@ function stopTimer(silent){
   state.sessions.push(rec);
 
   if(tk) tk['累计用时'] = total;
-  if(!silent) toast('这一段 ' + fmtMin(mins) + '，已累计到「' + r.title + '」' + (tk ? '（共 ' + fmtMin(total) + '）' : ''));
+  if(!silent){
+    var hm = minToHM(startD.getHours() * 60 + startD.getMinutes());
+    toast('记下了 ' + fmtMin(mins) + '（时间轴 ' + hm + ' 那格），已累计到「' + r.title + '」'
+      + (tk ? '（共 ' + fmtMin(total) + '）' : '') + '。没做完没关系，明天接着点「开始」继续。');
+  }
   renderAll();
 
   if(!db || isLocalId(r.recordId)){
@@ -4516,7 +4524,11 @@ function onListClick(ev){
     }
   }
   else if(act === 'dotFor') dotForTask(tk);
-  else if(act === 'timer') startTimer(tk);
+  else if(act === 'timer'){
+    /* 同一条再点就是结束：不用专门去找底部那条悬浮条 */
+    if(state.running && String(state.running.recordId) === String(tk.record_id)) stopTimer();
+    else startTimer(tk);
+  }
   else if(act === 'del') delTask(tk);
   else if(act === 'edit') startEditTitle(card, tk);
 }
