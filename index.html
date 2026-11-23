@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>我的工作台 · 教学 / 科研 / 行政 / 家庭生活</title>
+<title>我的工作台 · 教学 / 科研 / 行政 / 家庭生活 / 自我提升</title>
 <!-- 本工作台通过 WorkBuddy「资料库」skill 搭建、存储和部署 -->
 <style>
 :root{
@@ -16,6 +16,7 @@
   --res:#E18B84;   --resBg:#FCEEEC;
   --adm:#7FA8DC;   --admBg:#EEF4FC;
   --fam:#7FC4A4;   --famBg:#ECF7F1;
+  --self:#E5AE78;  --selfBg:#FCF1E3;
   --primary:#86AEDB; --primary2:#9CC2E6;
   --danger:#E2796F; --dangerBg:#FDF657; --warnBg:#FDEDEB;
   --ok:#63B8A6;
@@ -118,6 +119,7 @@ input,select,textarea{font-family:inherit;font-size:16px}
 .cpick.on.c-res{background:var(--resBg);color:#C4665C;border-color:#F5D8D3}
 .cpick.on.c-adm{background:var(--admBg);color:#4E7CA8;border-color:#CFE2F4}
 .cpick.on.c-fam{background:var(--famBg);color:#3E9585;border-color:#C9E9DC}
+.cpick.on.c-self{background:var(--selfBg);color:#B0722F;border-color:#F2DCBC}
 .btn{
   min-height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line);
   background:#fff;color:var(--ink);font-size:15px;cursor:pointer;
@@ -162,6 +164,7 @@ body.ord-dragging .task{transition:none}
 .task[data-cat="科研"]{border-left-color:var(--res)}
 .task[data-cat="行政"]{border-left-color:var(--adm)}
 .task[data-cat="家庭生活"]{border-left-color:var(--fam)}
+.task[data-cat="自我提升"]{border-left-color:var(--self)}
 .task.running{background:linear-gradient(90deg,#F2F9F7,#fff 40%);border-color:#CFEAE4;box-shadow:0 0 0 3px rgba(127,197,180,.12)}
 .chk{
   width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1.6px solid #D6E1E8;background:#fff;
@@ -187,6 +190,7 @@ body.ord-dragging .task{transition:none}
 .chip.c-res{background:var(--resBg);color:#C4665C}
 .chip.c-adm{background:var(--admBg);color:#4E7CA8}
 .chip.c-fam{background:var(--famBg);color:#3E9585}
+.chip.c-self{background:var(--selfBg);color:#B0722F}
 /* 分类标签可以点：点开手动改 */
 button.chip{border:0;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:3px;
   transition:filter .14s,box-shadow .14s}
@@ -243,6 +247,7 @@ button.tag-do:hover{background:#E4F1FA;border-color:#C6E0F2;color:#3B6893}
 .fb.f-res.on{background:var(--resBg);border-color:#F5D8D3;color:#C4665C}
 .fb.f-adm.on{background:var(--admBg);border-color:#CFE2F4;color:#4E7CA8}
 .fb.f-fam.on{background:var(--famBg);border-color:#C9E9DC;color:#3E9585}
+.fb.f-self.on{background:var(--selfBg);border-color:#F2DCBC;color:#B0722F}
 .fsp{flex:1}
 .fsel{height:32px;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--ink2);padding:0 8px;font-size:13px}
 .freset{
@@ -987,6 +992,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
       <button data-cat="科研" title="只看科研类任务"><i data-dot="科研"></i>科研<b class="rc-n" data-n="科研">0</b></button>
       <button data-cat="行政" title="只看行政类任务"><i data-dot="行政"></i>行政<b class="rc-n" data-n="行政">0</b></button>
       <button data-cat="家庭生活" title="只看家庭生活类任务"><i data-dot="家庭生活"></i>家庭生活<b class="rc-n" data-n="家庭生活">0</b></button>
+      <button data-cat="自我提升" title="只看自我提升类任务"><i data-dot="自我提升"></i>自我提升<b class="rc-n" data-n="自我提升">0</b></button>
     </div>
   </nav>
 
@@ -1129,6 +1135,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
         <button class="fb f-res" data-cat="科研">科研</button>
         <button class="fb f-adm" data-cat="行政">行政</button>
         <button class="fb f-fam" data-cat="家庭生活">家庭生活</button>
+        <button class="fb f-self" data-cat="自我提升">自我提升</button>
       </div>
       <span class="fsp"></span>
       <select class="fsel" id="statusFilter">
@@ -1221,7 +1228,7 @@ body.dt-dragging .dtodo{cursor:grabbing}
           添加
         </button>
       </div>
-      <p class="qa-tip" id="qaTip">按关键词自动分到「教学 / 科研 / 行政 / 家庭生活」，分错了点标签改一下。</p>
+      <p class="qa-tip" id="qaTip">按关键词自动分到「教学 / 科研 / 行政 / 家庭生活 / 自我提升」，分错了点标签改一下。</p>
       <button type="button" class="bulkopen" id="btnBulk">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>
         批量录入（一次贴一串）
@@ -1364,15 +1371,15 @@ body.dt-dragging .dtodo{cursor:grabbing}
 var DATABASE_ID = 'trduTOw4kH4o9eBlU6cISI';      /* 任务清单 */
 /* 计时记录表 id（平台校验要求内联字面量）：qgG4Bg18jaBhmBHdvjwNHw */
 
-var CATS = ['教学','科研','行政','家庭生活'];
-var CAT_CLS = { '教学':'c-teach', '科研':'c-res', '行政':'c-adm', '家庭生活':'c-fam' };
-var CAT_COLOR = { '教学':'#A79BE0', '科研':'#E18B84', '行政':'#7FA8DC', '家庭生活':'#7FC4A4' };
+var CATS = ['教学','科研','行政','家庭生活','自我提升'];
+var CAT_CLS = { '教学':'c-teach', '科研':'c-res', '行政':'c-adm', '家庭生活':'c-fam', '自我提升':'c-self' };
+var CAT_COLOR = { '教学':'#A79BE0', '科研':'#E18B84', '行政':'#7FA8DC', '家庭生活':'#7FC4A4', '自我提升':'#E5AE78' };
 /* 时间轴色块的浅底色：左粗条用 CAT_COLOR，填充用这里 */
-var CAT_BG = { '教学':'#F3F0FC', '科研':'#FCEEEC', '行政':'#EEF4FC', '家庭生活':'#ECF7F1' };
+var CAT_BG = { '教学':'#F3F0FC', '科研':'#FCEEEC', '行政':'#EEF4FC', '家庭生活':'#ECF7F1', '自我提升':'#FCF1E3' };
 /* 色块描边：同色系再浅一档 */
-var CAT_EDGE = { '教学':'#DCD5F7', '科研':'#F5D8D3', '行政':'#CFE2F4', '家庭生活':'#C9E9DC' };
+var CAT_EDGE = { '教学':'#DCD5F7', '科研':'#F5D8D3', '行政':'#CFE2F4', '家庭生活':'#C9E9DC', '自我提升':'#F2DCBC' };
 /* 周历格子小，CAT_BG 在白底上几乎看不见，单独用深一档的填充 */
-var CAT_BG_WK = { '教学':'#E3DBFA', '科研':'#F9D8D2', '行政':'#D6E6F8', '家庭生活':'#D5EFE3' };
+var CAT_BG_WK = { '教学':'#E3DBFA', '科研':'#F9D8D2', '行政':'#D6E6F8', '家庭生活':'#D5EFE3', '自我提升':'#F7E1C0' };
 var SAMPLE_TITLES = ['批改《数字电路》实验报告','准备《数字逻辑》第3-4节课件','修改论文第二稿讨论部分','填写学院年度考核表','晚饭后陪孩子读绘本'];
 
 var K_DRAFT='wb_lifehub_draft', K_RUN='wb_lifehub_running', K_CACHE='wb_lifehub_cache', K_CAT='wb_lifehub_lastcat', K_PANE='wb_lifehub_pane';
@@ -1458,7 +1465,8 @@ var RULES = [
   { cat:'教学', kw:['批改','作业','试卷','阅卷','监考','出题','答疑','备课','课件','讲义','教案','教学大纲','大纲','课堂','上课','讲课','试讲','公开课','听课','毕设','毕业论文指导','指导学生','学生','课程','选修课','必修','学期','期末考试','期中','实验课','实训','习题','讲课稿','成绩录入','调课','补课','带课','数字电路','数字逻辑','模拟电路','单片机'] },
   { cat:'科研', kw:['论文','投稿','期刊','审稿','返修','修改稿','大修','小修','基金','项目申请','申报书','标书','课题','专利','软著','组会','文献','综述','科研','实验数据','仿真','模型','算法','数据集','结题','国自然','自然科学基金','面上','青年基金','横向课题','预印本','答辩','学术','会议论文','专利撰写'] },
   { cat:'行政', kw:['开会','例会','会议','纪要','报表','打印','复印','审批','报销','发票','材料','通知','值班','填表','表格','报送','上报','汇总','统计表','协调','签字','盖章','工会','档案','行政','事务','排班','汇报','公文','年度考核','考核表','评估','职称','聘期','检查','验收','招标','采购','学院','教务处','党委','办公室','值班表'] },
-  { cat:'家庭生活', kw:['孩子','儿子','女儿','宝宝','接娃','送娃','陪孩子','亲子','读绘本','绘本','家务','做饭','买菜','超市','医院','体检','复诊','运动','健身','跑步','散步','瑜伽','游泳','父母','爸妈','家人','家庭','生活','打扫','打扫卫生','洗衣','晾衣','收拾','睡觉','早睡','洗澡','理发','旅游','度假','自我提升','读书','听书','学英语','背单词','练字','冥想','理财'] }
+  { cat:'家庭生活', kw:['孩子','儿子','女儿','宝宝','接娃','送娃','陪孩子','亲子','读绘本','绘本','家务','做饭','买菜','超市','医院','体检','复诊','运动','健身','跑步','散步','瑜伽','游泳','父母','爸妈','家人','家庭','生活','打扫','打扫卫生','洗衣','晾衣','收拾','睡觉','早睡','洗澡','理发','旅游','度假','冥想','理财'] },
+  { cat:'自我提升', kw:['自我提升','进修','培训','网课','考证','充电','PCB','pcb','layout','读书','看书','听书','阅读','学英语','背单词','练字','练琴','听课','兴趣班'] }
 ];
 /* 补记场景的补充词（补在原有词表后面，不覆盖） */
 RULES[0].kw.push('改作业','讲题','出卷','学业指导','毕设指导');
@@ -1471,7 +1479,6 @@ var LIFE_SUBS = [
   { sub:'运动', kw:['晨间运动','运动','健身','跑步','晨跑','夜跑','散步','快走','瑜伽','游泳','骑行','爬山','打球','拉伸','锻炼','球'] },
   { sub:'家务', kw:['家务','收拾','打扫','整理','收纳','洗衣','晾衣','叠衣','做饭','洗碗','拖地','擦','清理','买菜','超市','采买','采购','垃圾','修'] },
   { sub:'陪伴', kw:['陪孩子','陪娃','亲子','读绘本','绘本','孩子','儿子','女儿','宝宝','接娃','送娃','父母','爸妈','家人','家庭','老公','爱人','陪'] },
-  { sub:'自我', kw:['自我提升','读书','看书','听书','学英语','背单词','练字','练琴','画画','冥想','网课','学习','阅读','笔记','听课'] },
   { sub:'健康', kw:['医院','体检','复诊','看病','挂号','牙医','吃药','理疗','针灸'] },
   { sub:'闲适', kw:['休息','睡觉','午睡','午休','看剧','追剧','刷手机','发呆','喝咖啡','喝茶','聊天','刷视频','摸鱼','放空','走神','玩手机','刷短视频','闲逛','躺','歇','打游戏','游戏'] },
   { sub:'通勤', kw:['通勤','上班路上','下班路上','路上','地铁','公交','开车','骑车','打车','堵车','单程','班车','校车','步行去'] }
@@ -3961,7 +3968,7 @@ function applyClassify(text){
   else tip.textContent = '没看出明显关键词，先按「' + (state.draftCat || '教学') + '」归类，你可以在上面点一下改。';
 }
 function resetTip(){
-  el('qaTip').textContent = '按关键词自动分到「教学 / 科研 / 行政 / 家庭生活」，分错了点标签改一下。';
+  el('qaTip').textContent = '按关键词自动分到「教学 / 科研 / 行政 / 家庭生活 / 自我提升」，分错了点标签改一下。';
 }
 function saveDraft(){
   writeLS(K_DRAFT, JSON.stringify({ t: el('qaInput').value, c: state.draftCat, ts: Date.now() }));
